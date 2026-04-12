@@ -116,7 +116,7 @@ const StoreFooter = ({ business, theme }: StoreFooterProps) => {
 
         <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
           <p className={`text-xs ${theme.footerText || 'text-slate-400'}`}>© {new Date().getFullYear()} {business.business_name}. All rights reserved.</p>
-          <p className={`text-[10px] ${theme.footerText || 'text-slate-400'} flex items-center gap-1`}>Powered by <Zap className="w-3 h-3" /> Ezo</p>
+          <p className={`text-[10px] ${theme.footerText || 'text-slate-400'} flex items-center gap-1`}>Powered by <Zap className="w-3 h-3" /> Zen POS</p>
         </div>
       </div>
     </footer>

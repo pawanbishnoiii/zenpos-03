@@ -45,7 +45,7 @@ const AdminDashboard = () => {
   const [searchUsers, setSearchUsers] = useState('');
   const [searchBiz, setSearchBiz] = useState('');
   const [selectedBizCategory, setSelectedBizCategory] = useState('All');
-  const [smtpConfig, setSmtpConfig] = useState({ host: '', port: '587', username: '', password: '', encryption: 'tls', from_email: '', from_name: 'Ezo POS', is_active: false });
+  const [smtpConfig, setSmtpConfig] = useState({ host: '', port: '587', username: '', password: '', encryption: 'tls', from_email: '', from_name: 'Zen POS', is_active: false });
   const [savingSmtp, setSavingSmtp] = useState(false);
   const [smtpId, setSmtpId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -553,7 +553,7 @@ const AdminDashboard = () => {
                     <option value="tls">TLS</option><option value="ssl">SSL</option><option value="none">None</option>
                   </select></div>
                 <div><label className="text-xs font-medium text-muted-foreground mb-1 block">From Name</label>
-                  <input type="text" placeholder="Ezo POS" value={smtpConfig.from_name} onChange={e => setSmtpConfig(f => ({ ...f, from_name: e.target.value }))}
+                  <input type="text" placeholder="Zen POS" value={smtpConfig.from_name} onChange={e => setSmtpConfig(f => ({ ...f, from_name: e.target.value }))}
                     className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
               </div>
               <div><label className="text-xs font-medium text-muted-foreground mb-1 block">From Email</label>
@@ -728,7 +728,7 @@ const AdminDashboard = () => {
               const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a'); a.href = url;
-              a.download = `ezo-platform-backup-${new Date().toISOString().slice(0, 10)}.json`;
+              a.download = `zenpos-platform-backup-${new Date().toISOString().slice(0, 10)}.json`;
               document.body.appendChild(a); a.click(); document.body.removeChild(a);
               URL.revokeObjectURL(url);
               toast({ title: 'Platform backup exported!' });
@@ -745,7 +745,7 @@ const AdminDashboard = () => {
               const blob = new Blob([JSON.stringify(galleryItems, null, 2)], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a'); a.href = url;
-              a.download = `ezo-gallery-${new Date().toISOString().slice(0, 10)}.json`;
+              a.download = `zenpos-gallery-${new Date().toISOString().slice(0, 10)}.json`;
               document.body.appendChild(a); a.click(); document.body.removeChild(a);
               URL.revokeObjectURL(url);
               toast({ title: 'Gallery exported!' });

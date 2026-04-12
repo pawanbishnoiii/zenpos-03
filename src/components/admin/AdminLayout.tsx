@@ -39,7 +39,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
         </div>
         {!collapsed && (
           <div className="min-w-0">
-            <p className="text-sm font-bold text-foreground">Ezo Admin</p>
+            <p className="text-sm font-bold text-foreground">Zen POS Admin</p>
             <p className="text-[10px] text-muted-foreground">Super Admin Panel</p>
           </div>
         )}
@@ -91,7 +91,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
             <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-muted"><Menu className="w-5 h-5 text-foreground" /></button>
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-destructive" />
-              <span className="text-sm font-bold text-foreground">Ezo Admin</span>
+              <span className="text-sm font-bold text-foreground">Zen POS Admin</span>
             </div>
           </div>
         </header>
