@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
-import { ShoppingBag, Star, MapPin, Phone, Droplets, Car, Shield, Zap, Clock, Award, ChevronRight, MessageCircle, Bike, Bus, Truck, Sparkles, Eye, CheckCircle, Play, ChevronLeft, ArrowRight, Users, Heart } from 'lucide-react';
+import { ShoppingBag, Star, MapPin, Phone, Droplets, Car, Shield, Zap, Clock, Award, ChevronRight, MessageCircle, Bike, Bus, Truck, Sparkles, Eye, CheckCircle, Play, ChevronLeft, ArrowRight, Users, Heart, Send, Calendar, X } from 'lucide-react';
 import BannerSlideshow from '../BannerSlideshow';
 import OffersSection from '../OffersSection';
 import VideoSection from '../VideoSection';
+import BeforeAfterSlider from '../BeforeAfterSlider';
+import HappyCustomersSection from '../HappyCustomersSection';
 import MotionFooter from '@/components/ui/motion-footer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ThemeProps {
   business: any;
@@ -31,6 +34,15 @@ const WASH_STEPS = [
   { icon: Zap, title: 'Polish & Dry', desc: 'Ceramic coat & micro-fiber dry', color: 'text-yellow-400' },
 ];
 
+const SERVICES = [
+  { icon: Droplets, name: 'Exterior Wash', desc: 'Full body pressure wash', price: '₹249' },
+  { icon: Sparkles, name: 'Interior Cleaning', desc: 'Vacuum + dashboard polish', price: '₹349' },
+  { icon: Shield, name: 'Foam Wash', desc: 'Premium snow foam treatment', price: '₹449' },
+  { icon: Zap, name: 'Ceramic Coating', desc: 'Long-lasting body protection', price: '₹1,499' },
+  { icon: Car, name: 'Full Detailing', desc: 'Complete interior + exterior', price: '₹999' },
+  { icon: Bike, name: 'Bike Wash', desc: 'Two-wheeler cleaning', price: '₹149' },
+];
+
 const AnimSection = ({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-50px' });
@@ -44,6 +56,12 @@ const AnimSection = ({ children, className = '', delay = 0 }: { children: React.
 const CarWashTheme = ({ business, products, reviews, banners, offers, videos, onProductClick, getImageSrc }: ThemeProps) => {
   const [selectedVehicle, setSelectedVehicle] = useState('car');
   const [activeStep, setActiveStep] = useState(0);
+  const [happyCustomers, setHappyCustomers] = useState<any[]>([]);
+  const [beforeAfterMedia, setBeforeAfterMedia] = useState<any[]>([]);
+  const [showBooking, setShowBooking] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ name: '', text: '', rating: 5, product_id: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   const theme = {
     footerBg: 'bg-slate-950', footerText: 'text-slate-400', emoji: '🚗',
     tagline: business.tagline || 'Premium Car Wash & Detailing',
@@ -51,15 +69,45 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
   const avgRating = reviews.length > 0 ? (reviews.reduce((s: number, r: any) => s + r.rating, 0) / reviews.length).toFixed(1) : '5.0';
   const currentVehicle = VEHICLE_TYPES.find(v => v.id === selectedVehicle) || VEHICLE_TYPES[0];
 
-  // Auto-rotate wash steps
   useEffect(() => {
     const timer = setInterval(() => setActiveStep(s => (s + 1) % WASH_STEPS.length), 3000);
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!business?.id) return;
+    supabase.from('happy_customers').select('*').eq('business_id', business.id).order('sort_order').then(({ data }) => {
+      setHappyCustomers(data || []);
+    });
+    supabase.from('store_media').select('*').eq('business_id', business.id).eq('media_type', 'before_after').eq('is_active', true).then(({ data }) => {
+      setBeforeAfterMedia(data || []);
+    });
+  }, [business?.id]);
+
+  const handleSubmitReview = async () => {
+    if (!reviewForm.name.trim() || !reviewForm.product_id) return;
+    setSubmittingReview(true);
+    await supabase.from('product_reviews').insert({
+      business_id: business.id,
+      product_id: reviewForm.product_id,
+      reviewer_name: reviewForm.name.trim(),
+      review_text: reviewForm.text.trim() || null,
+      rating: reviewForm.rating,
+    });
+    setReviewForm({ name: '', text: '', rating: 5, product_id: '' });
+    setSubmittingReview(false);
+  };
+
+  const handleBookingWhatsApp = (service: string, date: string, time: string) => {
+    const phone = business.whatsapp_number || business.phone;
+    if (!phone) return;
+    const msg = encodeURIComponent(`Hi! I'd like to book: ${service}\nDate: ${date}\nTime: ${time}\n\nFrom: ${business.business_name} Store`);
+    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* Top promo strip */}
+      {/* Promo strip */}
       <div className="bg-gradient-to-r from-cyan-600 via-blue-500 to-cyan-600 text-white text-center py-2 text-xs font-semibold relative overflow-hidden">
         <motion.div animate={{ x: [0, -5, 0] }} transition={{ duration: 4, repeat: Infinity }}>
           💧 Premium Wash Starting from ₹249 | ⭐ Rated {avgRating} by Happy Customers | 🎁 Free Interior on First Visit
@@ -87,13 +135,12 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
             <a href="#process" className="hover:text-cyan-400 transition-colors">Process</a>
             <a href="#products" className="hover:text-cyan-400 transition-colors">Packages</a>
             <a href="#reviews" className="hover:text-cyan-400 transition-colors">Reviews</a>
+            <a href="#contact" className="hover:text-cyan-400 transition-colors">Contact</a>
           </div>
           <div className="flex items-center gap-2">
-            {business.phone && (
-              <a href={`tel:${business.phone}`} className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-500 text-white text-xs font-bold hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20">
-                <Phone className="w-3.5 h-3.5" /> Call
-              </a>
-            )}
+            <button onClick={() => setShowBooking(true)} className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-500 text-white text-xs font-bold hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20">
+              <Calendar className="w-3.5 h-3.5" /> Book Now
+            </button>
             {business.whatsapp_number && (
               <a href={`https://wa.me/${business.whatsapp_number}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-400 transition-colors">
@@ -104,12 +151,10 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
         </div>
       </nav>
 
-      {/* HERO - Immersive */}
+      {/* HERO */}
       <section className="relative min-h-[85vh] flex items-center overflow-hidden">
-        {/* Animated water background */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950/30 to-slate-950" />
-          {/* Water ripple circles */}
           {[...Array(5)].map((_, i) => (
             <motion.div key={i}
               className="absolute rounded-full border border-cyan-400/10"
@@ -119,7 +164,6 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
               transition={{ duration: 4, delay: i * 0.8, repeat: Infinity, ease: 'easeOut' }}
             />
           ))}
-          {/* Foam particle effect */}
           <div className="absolute inset-0 overflow-hidden">
             {[...Array(20)].map((_, i) => (
               <motion.div key={i}
@@ -175,15 +219,12 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
                 <a href="#products" className={`px-8 py-4 rounded-2xl bg-gradient-to-r ${currentVehicle.color} text-white text-sm font-bold shadow-xl ${currentVehicle.glow} flex items-center gap-2 hover:opacity-90 transition-all`}>
                   <ShoppingBag className="w-4 h-4" /> View Packages <ArrowRight className="w-4 h-4" />
                 </a>
-                {business.phone && (
-                  <a href={`tel:${business.phone}`} className="px-6 py-4 rounded-2xl border-2 border-white/10 text-sm font-bold hover:bg-white/5 transition-all flex items-center gap-2">
-                    <Phone className="w-4 h-4" /> Book Now
-                  </a>
-                )}
+                <button onClick={() => setShowBooking(true)} className="px-6 py-4 rounded-2xl border-2 border-white/10 text-sm font-bold hover:bg-white/5 transition-all flex items-center gap-2">
+                  <Calendar className="w-4 h-4" /> Book Now
+                </button>
               </motion.div>
             </div>
 
-            {/* Hero visual - vehicle with glow */}
             <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2, duration: 0.6 }}
               className="relative flex-shrink-0">
               {business.logo_url ? (
@@ -193,9 +234,7 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
                   <currentVehicle.icon className="w-24 h-24 text-white/80" />
                 </div>
               )}
-              {/* Glow ring */}
               <div className={`absolute -inset-6 rounded-3xl bg-gradient-to-br ${currentVehicle.color} opacity-15 blur-3xl -z-10`} />
-              {/* Stats floating cards */}
               <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3, repeat: Infinity }}
                 className="absolute -left-8 top-8 px-4 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl">
                 <p className="text-xl font-black text-cyan-400">{reviews.length * 10}+</p>
@@ -238,7 +277,33 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
         </div>
       )}
 
-      {/* Wash Process Steps */}
+      {/* Services Section */}
+      <section id="services" className="py-20 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-950/5 to-transparent" />
+        <div className="max-w-7xl mx-auto px-4 relative">
+          <AnimSection className="text-center mb-12">
+            <p className="text-xs text-cyan-400 font-bold uppercase tracking-[0.3em] mb-2">Our Services</p>
+            <h2 className="text-3xl md:text-5xl font-black">What We <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Offer</span></h2>
+          </AnimSection>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {SERVICES.map((s, i) => (
+              <AnimSection key={s.name} delay={i * 0.05}>
+                <motion.div whileHover={{ y: -4, scale: 1.02 }}
+                  className="rounded-3xl bg-white/[0.03] border border-white/5 p-6 text-center hover:border-cyan-500/20 transition-all group cursor-pointer">
+                  <div className="w-14 h-14 rounded-2xl mx-auto mb-4 bg-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <s.icon className="w-7 h-7 text-cyan-400" />
+                  </div>
+                  <h3 className="text-sm font-bold mb-1">{s.name}</h3>
+                  <p className="text-[11px] text-white/40 mb-3">{s.desc}</p>
+                  <p className="text-lg font-black text-cyan-400">{s.price}</p>
+                </motion.div>
+              </AnimSection>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Wash Process */}
       <section id="process" className="py-20 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-950/10 to-transparent" />
         <div className="max-w-7xl mx-auto px-4 relative">
@@ -246,7 +311,6 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
             <p className="text-xs text-cyan-400 font-bold uppercase tracking-[0.3em] mb-2">Our Process</p>
             <h2 className="text-3xl md:text-5xl font-black">How We <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Clean</span></h2>
           </AnimSection>
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {WASH_STEPS.map((step, i) => {
               const isActive = activeStep === i;
@@ -271,17 +335,30 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
         </div>
       </section>
 
+      {/* Before/After Gallery */}
+      {beforeAfterMedia.length >= 2 && (
+        <section className="py-20 max-w-4xl mx-auto px-4">
+          <AnimSection className="text-center mb-8">
+            <p className="text-xs text-cyan-400 font-bold uppercase tracking-[0.3em] mb-2">Results</p>
+            <h2 className="text-3xl md:text-4xl font-black">Before & After</h2>
+          </AnimSection>
+          <BeforeAfterSlider
+            beforeImage={beforeAfterMedia[0]?.url || ''}
+            afterImage={beforeAfterMedia[1]?.url || ''}
+          />
+        </section>
+      )}
+
       <OffersSection offers={offers} theme={theme} />
       <VideoSection videos={videos} />
 
-      {/* Services / Products */}
+      {/* Products */}
       <section id="products" className="max-w-7xl mx-auto px-4 py-20 space-y-10">
         <AnimSection className="text-center">
           <p className="text-xs text-cyan-400 font-bold uppercase tracking-[0.3em] mb-2">Our Packages</p>
           <h2 className="text-3xl md:text-5xl font-black">Choose Your <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Wash</span></h2>
           <p className="text-sm text-white/40 mt-2">Prices tailored for your {currentVehicle.label}</p>
         </AnimSection>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {products.map((p, i) => {
             const img = getImageSrc(p.image_url || '');
@@ -318,6 +395,9 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
         </div>
       </section>
 
+      {/* Happy Customers */}
+      <HappyCustomersSection customers={happyCustomers} />
+
       {/* Reviews */}
       <section id="reviews" className="py-20 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto px-4 space-y-10">
@@ -340,10 +420,122 @@ const CarWashTheme = ({ business, products, reviews, banners, offers, videos, on
               </AnimSection>
             ))}
           </div>
+
+          {/* Review Form */}
+          <AnimSection>
+            <div className="max-w-lg mx-auto rounded-3xl bg-white/[0.03] border border-white/10 p-6 space-y-4">
+              <h3 className="text-sm font-bold text-center">Leave a Review</h3>
+              <input type="text" placeholder="Your Name" value={reviewForm.name} onChange={e => setReviewForm(p => ({ ...p, name: e.target.value }))}
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-cyan-500/30" />
+              <select value={reviewForm.product_id} onChange={e => setReviewForm(p => ({ ...p, product_id: e.target.value }))}
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30">
+                <option value="" className="bg-slate-900">Select a service/product</option>
+                {products.map(p => <option key={p.id} value={p.id} className="bg-slate-900">{p.name}</option>)}
+              </select>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <button key={s} onClick={() => setReviewForm(p => ({ ...p, rating: s }))}>
+                    <Star className={`w-6 h-6 ${s <= reviewForm.rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`} />
+                  </button>
+                ))}
+              </div>
+              <textarea placeholder="Your experience..." value={reviewForm.text} onChange={e => setReviewForm(p => ({ ...p, text: e.target.value }))}
+                rows={3} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none resize-none focus:ring-2 focus:ring-cyan-500/30" />
+              <button onClick={handleSubmitReview} disabled={submittingReview || !reviewForm.name.trim() || !reviewForm.product_id}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+                <Send className="w-4 h-4" /> Submit Review
+              </button>
+            </div>
+          </AnimSection>
         </div>
       </section>
 
-      {/* Cinematic Footer */}
+      {/* Location & Contact */}
+      <section id="contact" className="py-20">
+        <div className="max-w-7xl mx-auto px-4 space-y-10">
+          <AnimSection className="text-center">
+            <p className="text-xs text-cyan-400 font-bold uppercase tracking-[0.3em] mb-2">Find Us</p>
+            <h2 className="text-3xl md:text-4xl font-black">Location & Contact</h2>
+          </AnimSection>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Google Map */}
+            {business.google_map_url && (
+              <AnimSection>
+                <div className="rounded-3xl overflow-hidden border border-white/10 aspect-video">
+                  <iframe
+                    src={business.google_map_url.includes('embed') ? business.google_map_url : `https://maps.google.com/maps?q=${encodeURIComponent(business.address || business.business_name)}&output=embed`}
+                    className="w-full h-full" allowFullScreen loading="lazy" title="Location"
+                  />
+                </div>
+              </AnimSection>
+            )}
+            {/* Contact Info */}
+            <AnimSection delay={0.1}>
+              <div className="rounded-3xl bg-white/[0.03] border border-white/5 p-8 space-y-6">
+                <div className="space-y-4">
+                  {business.address && (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-5 h-5 text-cyan-400 mt-0.5" />
+                      <div><p className="text-sm font-bold">Address</p><p className="text-xs text-white/50">{business.address}</p></div>
+                    </div>
+                  )}
+                  {business.phone && (
+                    <div className="flex items-start gap-3">
+                      <Phone className="w-5 h-5 text-cyan-400 mt-0.5" />
+                      <div><p className="text-sm font-bold">Phone</p><a href={`tel:${business.phone}`} className="text-xs text-cyan-400 hover:underline">{business.phone}</a></div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {business.phone && (
+                    <a href={`tel:${business.phone}`} className="flex-1 py-3 rounded-xl bg-cyan-500 text-white text-sm font-bold text-center hover:bg-cyan-400 transition-colors">
+                      <Phone className="w-4 h-4 inline mr-1" /> Call Now
+                    </a>
+                  )}
+                  {business.whatsapp_number && (
+                    <a href={`https://wa.me/${business.whatsapp_number}`} target="_blank" rel="noopener noreferrer"
+                      className="flex-1 py-3 rounded-xl bg-green-500 text-white text-sm font-bold text-center hover:bg-green-400 transition-colors">
+                      <MessageCircle className="w-4 h-4 inline mr-1" /> WhatsApp
+                    </a>
+                  )}
+                </div>
+              </div>
+            </AnimSection>
+          </div>
+        </div>
+      </section>
+
+      {/* Booking Modal */}
+      <AnimatePresence>
+        {showBooking && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" onClick={() => setShowBooking(false)}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              className="bg-slate-900 rounded-3xl p-6 max-w-md w-full space-y-4 border border-white/10" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold">Book a Service</h3>
+                <button onClick={() => setShowBooking(false)}><X className="w-5 h-5 text-white/50" /></button>
+              </div>
+              <select id="book-service" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white">
+                {SERVICES.map(s => <option key={s.name} value={s.name} className="bg-slate-900">{s.name} — {s.price}</option>)}
+              </select>
+              <input type="date" id="book-date" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white" />
+              <input type="time" id="book-time" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white" />
+              <button onClick={() => {
+                const s = (document.getElementById('book-service') as HTMLSelectElement)?.value;
+                const d = (document.getElementById('book-date') as HTMLInputElement)?.value;
+                const t = (document.getElementById('book-time') as HTMLInputElement)?.value;
+                handleBookingWhatsApp(s, d, t);
+                setShowBooking(false);
+              }} className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold text-sm flex items-center justify-center gap-2">
+                <MessageCircle className="w-4 h-4" /> Book via WhatsApp
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Footer */}
       <MotionFooter business={business} theme={theme} />
     </div>
   );
