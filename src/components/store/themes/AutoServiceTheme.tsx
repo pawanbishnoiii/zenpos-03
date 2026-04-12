@@ -1,10 +1,13 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Star, MapPin, Phone, Wrench, Car, Shield, Zap, Clock, Award, ChevronRight, MessageCircle, Bike, Bus, Truck, Droplets, Sparkles, Eye } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { ShoppingBag, Star, MapPin, Phone, Wrench, Car, Shield, Zap, Clock, Award, ChevronRight, MessageCircle, Bike, Bus, Truck, Droplets, Sparkles, Eye, Users, CheckCircle, Play } from 'lucide-react';
 import BannerSlideshow from '../BannerSlideshow';
 import OffersSection from '../OffersSection';
 import VideoSection from '../VideoSection';
 import MotionFooter from '@/components/ui/motion-footer';
+import BeforeAfterSlider from '../BeforeAfterSlider';
+import HappyCustomersSection from '../HappyCustomersSection';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ThemeProps {
   business: any;
@@ -24,25 +27,95 @@ const VEHICLE_TYPES = [
   { id: 'bus', label: 'Bus', icon: Bus, color: 'from-emerald-500 to-teal-500' },
 ];
 
+// Animated counter component
+const AnimatedCounter = ({ target, suffix = '' }: { target: number; suffix?: string }) => {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true });
+
+  useEffect(() => {
+    if (!isInView) return;
+    const duration = 2000;
+    const start = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(target * eased));
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [isInView, target]);
+
+  return <div ref={ref}>{count}{suffix}</div>;
+};
+
 const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos, onProductClick, getImageSrc }: ThemeProps) => {
   const [selectedVehicle, setSelectedVehicle] = useState('car');
+  const [happyCustomers, setHappyCustomers] = useState<any[]>([]);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewProduct, setReviewProduct] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   const theme = {
     footerBg: 'bg-slate-900', footerText: 'text-slate-400', emoji: '🚗',
     tagline: business.tagline || 'Premium Auto Care & Service',
   };
   const avgRating = reviews.length > 0 ? (reviews.reduce((s: number, r: any) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
 
+  useEffect(() => {
+    const fetchHappy = async () => {
+      const { data } = await supabase.from('happy_customers').select('*').eq('business_id', business.id).order('sort_order');
+      setHappyCustomers(data || []);
+    };
+    fetchHappy();
+  }, [business.id]);
+
+  const handleSubmitReview = async () => {
+    if (!reviewName.trim()) return;
+    setSubmittingReview(true);
+    const productId = reviewProduct || (products.length > 0 ? products[0].id : null);
+    if (!productId) { setSubmittingReview(false); return; }
+    
+    await supabase.from('product_reviews').insert({
+      business_id: business.id,
+      product_id: productId,
+      reviewer_name: reviewName.trim(),
+      review_text: reviewText.trim(),
+      rating: reviewRating,
+      is_approved: false,
+    });
+    setReviewName(''); setReviewText(''); setReviewRating(5); setReviewProduct('');
+    setSubmittingReview(false);
+  };
+
   const trustBadges = [
     { icon: Shield, label: 'Trusted Service', value: '100%' },
-    { icon: Award, label: 'Happy Customers', value: `${reviews.length * 10}+` },
+    { icon: Award, label: 'Happy Customers', value: `${Math.max(reviews.length * 10, 100)}+` },
     { icon: Clock, label: 'Quick Service', value: '30 min' },
     { icon: Wrench, label: 'Expert Team', value: 'Certified' },
+  ];
+
+  const counterStats = [
+    { target: Math.max(reviews.length * 50, 500), suffix: '+', label: 'Cars Washed' },
+    { target: Math.max(reviews.length * 10, 100), suffix: '+', label: 'Happy Clients' },
+    { target: 5, suffix: '★', label: 'Avg Rating' },
+    { target: 3, suffix: '+', label: 'Years Exp' },
   ];
 
   const currentVehicle = VEHICLE_TYPES.find(v => v.id === selectedVehicle) || VEHICLE_TYPES[0];
 
   return (
     <div className="min-h-screen bg-slate-950" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Grid background */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03]" style={{
+        backgroundImage: 'linear-gradient(rgba(0,188,212,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,188,212,0.3) 1px, transparent 1px)',
+        backgroundSize: '50px 50px',
+        maskImage: 'radial-gradient(circle at center, black 20%, transparent 80%)',
+      }} />
+
       {/* Promo Strip */}
       <div className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 text-white text-center py-2.5 text-xs font-semibold tracking-wide relative overflow-hidden">
         <motion.div animate={{ x: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }}>
@@ -50,7 +123,7 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
         </motion.div>
       </div>
 
-      {/* Sticky Nav - Dark Chrome */}
+      {/* Sticky Nav */}
       <nav className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 shadow-lg shadow-black/20">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -68,8 +141,10 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
           </div>
           <div className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-400">
             <a href="#services" className="hover:text-cyan-400 transition-colors">Services</a>
+            <a href="#gallery" className="hover:text-cyan-400 transition-colors">Gallery</a>
             <a href="#products" className="hover:text-cyan-400 transition-colors">Parts</a>
             <a href="#reviews" className="hover:text-cyan-400 transition-colors">Reviews</a>
+            <a href="#contact" className="hover:text-cyan-400 transition-colors">Contact</a>
           </div>
           <div className="flex items-center gap-2">
             {business.phone && (
@@ -87,15 +162,12 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
         </div>
       </nav>
 
-      {/* Hero - Immersive Dark with Vehicle Selector */}
+      {/* Hero */}
       <section className="relative overflow-hidden">
-        {/* Animated background */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950/50 to-slate-950" />
         <div className="absolute inset-0 opacity-5" style={{
           backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%2300bcd4\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
         }} />
-
-        {/* Animated water/foam ripples */}
         <motion.div className="absolute bottom-0 left-0 right-0 h-32 opacity-10"
           animate={{ y: [0, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           style={{ background: 'radial-gradient(ellipse at center, rgba(0,188,212,0.3) 0%, transparent 70%)' }} />
@@ -155,7 +227,6 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
                   <currentVehicle.icon className="w-20 h-20 text-white/80" />
                 </div>
               )}
-              {/* Glow effect */}
               <div className={`absolute -inset-4 rounded-3xl bg-gradient-to-br ${currentVehicle.color} opacity-20 blur-2xl -z-10`} />
             </motion.div>
           </div>
@@ -163,15 +234,30 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 to-transparent" />
       </section>
 
-      {/* Trust Badges */}
+      {/* Counter Stats */}
       <section className="max-w-7xl mx-auto px-4 -mt-8 relative z-10 mb-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {trustBadges.map((badge, i) => (
-            <motion.div key={badge.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * i }}
+          {counterStats.map((stat, i) => (
+            <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 * i }}
               whileHover={{ y: -3, transition: { duration: 0.2 } }}
               className="rounded-2xl bg-slate-800/80 backdrop-blur-sm shadow-lg border border-slate-700/50 p-4 text-center">
-              <badge.icon className="w-6 h-6 mx-auto text-cyan-400 mb-2" />
-              <p className="text-xl font-black text-white">{badge.value}</p>
+              <p className="text-2xl md:text-3xl font-black text-cyan-400">
+                <AnimatedCounter target={stat.target} suffix={stat.suffix} />
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium mt-1">{stat.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Trust Badges */}
+      <section className="max-w-7xl mx-auto px-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {trustBadges.map((badge, i) => (
+            <motion.div key={badge.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 * i }}
+              className="rounded-2xl bg-slate-800/40 backdrop-blur-sm border border-slate-700/30 p-4 text-center group hover:border-cyan-500/30 transition-colors">
+              <badge.icon className="w-6 h-6 mx-auto text-cyan-400 mb-2 group-hover:scale-110 transition-transform" />
+              <p className="text-lg font-black text-white">{badge.value}</p>
               <p className="text-[10px] text-slate-400 font-medium">{badge.label}</p>
             </motion.div>
           ))}
@@ -184,8 +270,81 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
         </div>
       )}
 
+      {/* Before/After Section */}
+      <section id="gallery" className="max-w-7xl mx-auto px-4 py-16 space-y-8">
+        <div className="text-center space-y-2">
+          <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest">Results</p>
+          <h2 className="text-3xl md:text-4xl font-black text-white">Before & After</h2>
+          <p className="text-sm text-slate-400">Drag the slider to see the difference</p>
+        </div>
+        <div className="max-w-3xl mx-auto">
+          <BeforeAfterSlider
+            beforeImage="https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&h=450&fit=crop"
+            afterImage="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=800&h=450&fit=crop"
+            beforeLabel="Before Wash"
+            afterLabel="After Wash"
+          />
+        </div>
+      </section>
+
       <OffersSection offers={offers} theme={theme} />
       <VideoSection videos={videos} />
+
+      {/* Happy Customers */}
+      <HappyCustomersSection customers={happyCustomers} />
+
+      {/* About / Owner Card */}
+      {(business.owner_card_visible !== false) && (
+        <section className="max-w-7xl mx-auto px-4 py-16">
+          <div className="rounded-3xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm border border-slate-700/50 p-8 md:p-12">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-xl shrink-0">
+                {business.logo_url ? (
+                  <img src={getImageSrc(business.logo_url)} alt="" className="w-full h-full rounded-2xl object-cover" />
+                ) : (
+                  <Users className="w-12 h-12 text-white/80" />
+                )}
+              </div>
+              <div className="flex-1 text-center md:text-left space-y-3">
+                <h3 className="text-2xl font-black text-white">{business.business_name}</h3>
+                <p className="text-slate-400 text-sm max-w-lg">{theme.tagline}</p>
+                {business.address && (
+                  <p className="text-sm text-slate-500 flex items-center gap-2 justify-center md:justify-start">
+                    <MapPin className="w-4 h-4 text-cyan-400" /> {business.address}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                  {business.phone && (
+                    <a href={`tel:${business.phone}`} className="px-4 py-2 rounded-xl bg-cyan-500/10 text-cyan-400 text-xs font-semibold border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5" /> {business.phone}
+                    </a>
+                  )}
+                  {business.whatsapp_number && (
+                    <a href={`https://wa.me/${business.whatsapp_number}`} target="_blank" rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-green-500/10 text-green-400 text-xs font-semibold border border-green-500/20 hover:bg-green-500/20 transition-colors flex items-center gap-1.5">
+                      <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Google Map */}
+      {business.google_map_url && (
+        <section id="contact" className="max-w-7xl mx-auto px-4 pb-16">
+          <div className="text-center space-y-2 mb-8">
+            <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest">Find Us</p>
+            <h2 className="text-3xl font-black text-white">Our Location</h2>
+          </div>
+          <div className="rounded-3xl overflow-hidden border border-slate-700/50 shadow-xl">
+            <iframe src={business.google_map_url} width="100%" height="350" style={{ border: 0 }}
+              allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Location" />
+          </div>
+        </section>
+      )}
 
       {/* Services / Products */}
       <section id="products" className="max-w-7xl mx-auto px-4 py-16 space-y-8">
@@ -235,15 +394,48 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
             <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest">Testimonials</p>
             <h2 className="text-3xl font-black text-white">What Our Customers Say {avgRating && `⭐ ${avgRating}`}</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {reviews.slice(0, 6).map((r, i) => (
-              <motion.div key={r.id} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
-                className="p-5 rounded-2xl bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 space-y-3 hover:border-cyan-500/30 transition-colors">
-                <div className="flex gap-0.5">{[...Array(5)].map((_, j) => <Star key={j} className={`w-4 h-4 ${j < r.rating ? 'text-yellow-500 fill-yellow-500' : 'text-slate-600'}`} />)}</div>
-                {r.review_text && <p className="text-sm text-slate-300 italic leading-relaxed">"{r.review_text}"</p>}
-                <p className="text-xs text-slate-400 font-semibold">{r.reviewer_name}</p>
-              </motion.div>
-            ))}
+          {reviews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {reviews.slice(0, 6).map((r, i) => (
+                <motion.div key={r.id} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                  className="p-5 rounded-2xl bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 space-y-3 hover:border-cyan-500/30 transition-colors">
+                  <div className="flex gap-0.5">{[...Array(5)].map((_, j) => <Star key={j} className={`w-4 h-4 ${j < r.rating ? 'text-yellow-500 fill-yellow-500' : 'text-slate-600'}`} />)}</div>
+                  {r.review_text && <p className="text-sm text-slate-300 italic leading-relaxed">"{r.review_text}"</p>}
+                  <p className="text-xs text-slate-400 font-semibold">{r.reviewer_name}</p>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-slate-500 text-sm">No reviews yet. Be the first to leave one!</p>
+          )}
+
+          {/* Review Form */}
+          <div className="max-w-lg mx-auto rounded-2xl bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 p-6 space-y-4">
+            <h3 className="text-sm font-bold text-white text-center">Leave a Review</h3>
+            <input type="text" placeholder="Your Name" value={reviewName} onChange={e => setReviewName(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30" />
+            <textarea placeholder="Your experience..." value={reviewText} onChange={e => setReviewText(e.target.value)} rows={3}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 resize-none" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Rating:</span>
+              {[1,2,3,4,5].map(s => (
+                <button key={s} onClick={() => setReviewRating(s)}>
+                  <Star className={`w-5 h-5 ${s <= reviewRating ? 'text-yellow-500 fill-yellow-500' : 'text-slate-600'}`} />
+                </button>
+              ))}
+            </div>
+            {products.length > 0 && (
+              <select value={reviewProduct} onChange={e => setReviewProduct(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30">
+                <option value="">Select a service (optional)</option>
+                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            )}
+            <button onClick={handleSubmitReview} disabled={!reviewName.trim() || submittingReview}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-bold disabled:opacity-50 hover:opacity-90 transition-opacity">
+              {submittingReview ? 'Submitting...' : 'Submit Review'}
+            </button>
+            <p className="text-[10px] text-slate-500 text-center">Reviews are moderated and will appear after approval.</p>
           </div>
         </div>
       </section>
