@@ -1,4 +1,4 @@
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { IndianRupee, Package, TrendingUp, AlertTriangle, LogOut, Shield, Receipt, Users, Tag, BarChart3, Settings, Globe, ExternalLink, Palette, MessageCircle, QrCode, Share2, TrendingDown, CreditCard } from 'lucide-react';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -7,29 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBusiness } from '@/hooks/useBusiness';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getCategoryConfig } from '@/lib/categoryConfig';
 import { useToast } from '@/hooks/use-toast';
-
-// Animated counter component
-const AnimatedCounter = ({ value, prefix = '' }: { value: number; prefix?: string }) => {
-  const [displayed, setDisplayed] = useState(0);
-  useEffect(() => {
-    const duration = 800;
-    const start = Date.now();
-    const startVal = displayed;
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayed(Math.round(startVal + (value - startVal) * eased));
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [value]);
-  return <span>{prefix}{displayed.toLocaleString()}</span>;
-};
 
 const Dashboard = () => {
   const { user, signOut, isAdmin } = useAuth();
@@ -78,23 +59,19 @@ const Dashboard = () => {
 
   const storeUrl = business?.store_slug ? `${window.location.origin}/store/${business.store_slug}` : '';
 
-  // Dynamic quick actions based on category
-  const getQuickActions = () => {
-    const base = [
-      { icon: Package, label: categoryConfig?.navLabel.workspace || 'Workspace', desc: 'Manage products', path: '/workspace' },
-      { icon: IndianRupee, label: categoryConfig?.navLabel.billing || 'New Bill', desc: 'Create invoice', path: '/billing' },
-      { icon: Receipt, label: 'History', desc: 'Past invoices', path: '/history' },
-      { icon: Users, label: categoryConfig?.navLabel.customers || 'Customers', desc: 'Customer CRM', path: '/customers' },
-      { icon: Tag, label: 'Offers', desc: 'Discounts & coupons', path: '/offers' },
-      { icon: TrendingDown, label: 'Expenses', desc: 'Track kharche', path: '/expenses' },
-      { icon: CreditCard, label: 'Udhar', desc: 'Credit ledger', path: '/credit-ledger' },
-      { icon: BarChart3, label: 'Reports', desc: 'Analytics', path: '/reports' },
-      { icon: Globe, label: 'Store', desc: 'Public page', path: storeUrl ? `/store/${business?.store_slug}` : '/settings' },
-      { icon: Palette, label: 'Store Manager', desc: 'Customize store', path: '/store-manager' },
-      { icon: Settings, label: 'Settings', desc: 'Configuration', path: '/settings' },
-    ];
-    return base;
-  };
+  const getQuickActions = () => [
+    { icon: Package, label: categoryConfig?.navLabel.workspace || 'Workspace', desc: 'Manage products', path: '/workspace' },
+    { icon: IndianRupee, label: categoryConfig?.navLabel.billing || 'New Bill', desc: 'Create invoice', path: '/billing' },
+    { icon: Receipt, label: 'History', desc: 'Past invoices', path: '/history' },
+    { icon: Users, label: categoryConfig?.navLabel.customers || 'Customers', desc: 'Customer CRM', path: '/customers' },
+    { icon: Tag, label: 'Offers', desc: 'Discounts & coupons', path: '/offers' },
+    { icon: TrendingDown, label: 'Expenses', desc: 'Track kharche', path: '/expenses' },
+    { icon: CreditCard, label: 'Udhar', desc: 'Credit ledger', path: '/credit-ledger' },
+    { icon: BarChart3, label: 'Reports', desc: 'Analytics', path: '/reports' },
+    { icon: Globe, label: 'Store', desc: 'Public page', path: storeUrl ? `/store/${business?.store_slug}` : '/settings' },
+    { icon: Palette, label: 'Store Manager', desc: 'Customize store', path: '/store-manager' },
+    { icon: Settings, label: 'Settings', desc: 'Configuration', path: '/settings' },
+  ];
 
   const handleWhatsAppShare = () => {
     if (!storeUrl) return;
@@ -104,6 +81,7 @@ const Dashboard = () => {
 
   return (
     <div className="px-4 pt-4 lg:pl-24 max-w-5xl mx-auto space-y-5 pb-24">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-muted-foreground font-medium">{dayjs().format('dddd, D MMMM YYYY')}</motion.p>
@@ -116,6 +94,7 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Category & Store badges */}
       {categoryConfig && (
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
@@ -130,6 +109,7 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Stat Cards */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard title="Today Sales" value={`₹${stats.todaySales.toLocaleString()}`} icon={IndianRupee} trend={stats.todaySales > 0 ? 'Live' : 'No sales'} trendUp={stats.todaySales > 0} gradient />
         <StatCard title="Monthly Sales" value={`₹${(stats.monthlySales / 1000).toFixed(1)}K`} icon={TrendingUp} trend="This month" />
@@ -137,7 +117,7 @@ const Dashboard = () => {
         <StatCard title="Low Stock" value={stats.lowStock.toString()} icon={AlertTriangle} trend={stats.lowStock > 0 ? 'Attention' : 'Good'} />
       </div>
 
-      {/* WhatsApp & Share row */}
+      {/* WhatsApp & Share */}
       {storeUrl && (
         <div className="flex gap-2">
           <motion.button whileTap={{ scale: 0.95 }} onClick={handleWhatsAppShare}
@@ -150,6 +130,8 @@ const Dashboard = () => {
           </motion.button>
         </div>
       )}
+
+      {/* Quick stats row */}
       <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4">
         {[
           { label: categoryConfig?.navLabel.customers || 'Customers', value: stats.totalCustomers, icon: Users, color: 'text-success' },
@@ -158,15 +140,16 @@ const Dashboard = () => {
         ].map(s => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="min-w-[120px] rounded-2xl glass-card shadow-soft p-3 space-y-1">
+            <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="min-w-[120px] rounded-2xl glass-card shadow-soft p-3 space-y-1">
               <Icon className={`w-4 h-4 ${s.color}`} />
               <p className="text-lg font-bold font-display text-foreground">{s.value}</p>
               <p className="text-[10px] text-muted-foreground">{s.label}</p>
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
+      {/* Revenue Chart */}
       {revenueData.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl glass-card shadow-soft p-4">
           <h2 className="text-sm font-semibold mb-4 text-foreground">Revenue This Week</h2>
@@ -185,16 +168,20 @@ const Dashboard = () => {
         </motion.div>
       )}
 
+      {/* Quick Actions Grid */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 pb-4">
-        {getQuickActions().map(item => {
+        {getQuickActions().map((item, i) => {
           const Icon = item.icon;
           return (
-            <button key={item.label} onClick={() => item.path.startsWith('/store') ? window.open(item.path, '_blank') : navigate(item.path)}
-              className="p-4 rounded-2xl glass-card shadow-soft text-left hover:shadow-elevated transition-shadow">
+            <motion.button key={item.label} 
+              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}
+              whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              onClick={() => item.path.startsWith('/store') ? window.open(item.path, '_blank') : navigate(item.path)}
+              className="p-4 rounded-2xl glass-card shadow-soft text-left hover:shadow-elevated transition-all">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2"><Icon className="w-5 h-5 text-primary" /></div>
               <p className="text-sm font-semibold text-foreground">{item.label}</p>
               <p className="text-xs text-muted-foreground">{item.desc}</p>
-            </button>
+            </motion.button>
           );
         })}
       </motion.div>
