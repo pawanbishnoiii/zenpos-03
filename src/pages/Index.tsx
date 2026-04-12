@@ -5,7 +5,7 @@ import { useRef, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import anime from 'animejs';
+import * as anime from 'animejs';
 import {
   Car, Wrench, Zap, BarChart3, ScanLine, Printer, ChevronRight, Star, Shield,
   ShoppingCart, Pill, Laptop, Shirt, Apple, Coffee, Scissors, BookOpen,
