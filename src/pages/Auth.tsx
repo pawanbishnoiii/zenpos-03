@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { Car, Wrench, Mail, Lock, User, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Zap, Mail, Lock, User, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { lovable } from '@/integrations/lovable/index';
 
@@ -101,9 +101,9 @@ const Auth = () => {
             animate={{ scale: 1 }}
             className="w-20 h-20 mx-auto rounded-2xl gradient-primary flex items-center justify-center glow-primary"
           >
-            <Car className="w-10 h-10 text-primary-foreground" />
+            <Zap className="w-10 h-10 text-primary-foreground" />
           </motion.div>
-          <h1 className="text-2xl font-bold font-display text-foreground">Welcome</h1>
+          <h1 className="text-2xl font-bold font-display text-foreground">Zen POS</h1>
           <p className="text-sm text-muted-foreground">Smart POS for your business</p>
         </div>
 
@@ -240,14 +240,11 @@ const Auth = () => {
         {/* Footer */}
         <div className="flex items-center gap-3 justify-center">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Car className="w-3.5 h-3.5 text-primary" />
-            <span>Car Wash</span>
+            <Zap className="w-3.5 h-3.5 text-primary" />
+            <span>Zen POS</span>
           </div>
           <span className="text-muted-foreground">•</span>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Wrench className="w-3.5 h-3.5 text-accent" />
-            <span>Spare Parts</span>
-          </div>
+          <span className="text-xs text-muted-foreground">Smart Business POS</span>
         </div>
       </motion.div>
     </div>

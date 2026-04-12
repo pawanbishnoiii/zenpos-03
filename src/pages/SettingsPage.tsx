@@ -194,7 +194,7 @@ const SettingsPage = () => {
     if (isAdmin) {
       groups.push({
         title: 'ADMINISTRATION',
-        items: [{ nav: '/admin', icon: Shield, label: 'Ezo Admin', desc: 'Platform management' } as any],
+        items: [{ nav: '/admin', icon: Shield, label: 'Zen POS Admin', desc: 'Platform management' } as any],
       });
     }
     return groups;

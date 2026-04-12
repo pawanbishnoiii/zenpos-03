@@ -213,7 +213,7 @@ export function MotionFooter({ business, theme, className }: MotionFooterProps) 
           </p>
           <div className="flex items-center gap-4">
             <p className="text-[10px] text-white/20 flex items-center gap-1">
-              Made with <Heart className="w-3 h-3 text-red-400 animate-pulse" /> Ezo
+              Made with <Heart className="w-3 h-3 text-red-400 animate-pulse" /> Zen POS
             </p>
             <MagneticButton onClick={scrollToTop}
               className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
