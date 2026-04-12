@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Palette, Image, FileText, Star, Search as SearchIcon, Globe, Upload, Trash2, Eye, EyeOff, Save, Loader2, ExternalLink, Video, Plus, GripVertical, MessageSquare, Check, X, Tag, ShoppingBag, Layout, Navigation, Receipt, Users, MapPin, Phone, Instagram, Youtube, Facebook, LinkIcon, Type, PaintBucket, Smartphone, Monitor, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Palette, Image, FileText, Star, Search as SearchIcon, Globe, Upload, Trash2, Eye, EyeOff, Save, Loader2, ExternalLink, Video, Plus, GripVertical, MessageSquare, Check, X, Tag, ShoppingBag, Layout, Navigation, Receipt, Users, MapPin, Phone, Instagram, Youtube, Facebook, LinkIcon, Type, PaintBucket, Smartphone, Monitor, ChevronDown, Heart, Code, Layers } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import { useBusiness } from '@/hooks/useBusiness';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +33,7 @@ const StoreManager = () => {
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const logoRef = useRef<HTMLInputElement>(null);
+  const happyImgRef = useRef<HTMLInputElement>(null);
 
   const [stats, setStats] = useState({ products: 0, reviews: 0, media: 0, offers: 0 });
   const [mediaItems, setMediaItems] = useState<any[]>([]);
@@ -44,7 +45,7 @@ const StoreManager = () => {
   const [seoDesc, setSeoDesc] = useState('');
   const [allOffers, setAllOffers] = useState<any[]>([]);
 
-  // Footer editor state
+  // Footer editor
   const [footerFullName, setFooterFullName] = useState('');
   const [footerAddress, setFooterAddress] = useState('');
   const [footerPincode, setFooterPincode] = useState('');
@@ -59,19 +60,35 @@ const StoreManager = () => {
   const [savingFooter, setSavingFooter] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
 
-  // Hero section editor state
+  // Hero editor
   const [heroTitle, setHeroTitle] = useState('');
   const [heroSubtitle, setHeroSubtitle] = useState('');
   const [heroCtaText, setHeroCtaText] = useState('');
   const [heroBgType, setHeroBgType] = useState('gradient');
   const [savingHero, setSavingHero] = useState(false);
 
-  // Billing settings state
+  // Billing
   const [invoiceLogo, setInvoiceLogo] = useState(true);
   const [invoiceShopName, setInvoiceShopName] = useState('');
   const [invoiceFooter, setInvoiceFooter] = useState('Thank You! Visit Again');
   const [invoiceStyle, setInvoiceStyle] = useState('classic');
   const [savingBilling, setSavingBilling] = useState(false);
+
+  // Happy customers
+  const [happyCustomers, setHappyCustomers] = useState<any[]>([]);
+  const [happyName, setHappyName] = useState('');
+  const [happyTitle, setHappyTitle] = useState('');
+  const [happyVehicle, setHappyVehicle] = useState('');
+  const [happyUploading, setHappyUploading] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerResults, setCustomerResults] = useState<any[]>([]);
+
+  // Custom CSS
+  const [customCss, setCustomCss] = useState('');
+  const [savingCss, setSavingCss] = useState(false);
+
+  // Live preview
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('desktop');
 
   const config = business ? getCategoryConfig(business.category) : null;
   const storeUrl = business?.store_slug ? `${window.location.origin}/store/${business.store_slug}` : '';
@@ -80,66 +97,57 @@ const StoreManager = () => {
     if (!business) return;
     setStoreTheme((business as any).store_theme || 'suspended');
     const fetchData = async () => {
-      const [prods, revs, media, content, offersRes] = await Promise.all([
+      const [prods, revs, media, content, offersRes, happyRes] = await Promise.all([
         supabase.from('products').select('id', { count: 'exact', head: true }).eq('business_id', business.id),
         supabase.from('product_reviews').select('*').eq('business_id', business.id).eq('is_approved', false).order('created_at', { ascending: false }),
         supabase.from('store_media').select('*').eq('business_id', business.id).order('sort_order'),
         supabase.from('store_content').select('*').eq('business_id', business.id),
         supabase.from('business_offers').select('*').eq('business_id', business.id).order('created_at', { ascending: false }),
+        supabase.from('happy_customers').select('*').eq('business_id', business.id).order('sort_order'),
       ]);
       setStats({ products: prods.count || 0, reviews: (revs.data || []).length, media: (media.data || []).length, offers: (offersRes.data || []).length });
       setPendingReviews(revs.data || []);
       setMediaItems(media.data || []);
       setAllOffers(offersRes.data || []);
+      setHappyCustomers(happyRes.data || []);
+
       const contentMap: Record<string, any> = {};
       (content.data || []).forEach((c: any) => { contentMap[c.section_key] = { title: c.title, content: c.content, is_visible: c.is_visible }; });
       if (!contentMap.about) contentMap.about = { title: 'About Us', content: '', is_visible: true };
       if (!contentMap.services) contentMap.services = { title: 'Our Services', content: '', is_visible: true };
       setContents(contentMap);
 
-      // Load footer content
+      // Load footer
       const footer = contentMap.footer;
       if (footer?.content) {
         try {
           const fd = JSON.parse(footer.content);
-          setFooterFullName(fd.fullName || '');
-          setFooterAddress(fd.address || '');
-          setFooterPincode(fd.pincode || '');
-          setFooterWhatsapp(fd.whatsapp || '');
-          setFooterGoogleMap(fd.googleMap || '');
-          setFooterInstagram(fd.instagram || '');
-          setFooterYoutube(fd.youtube || '');
-          setFooterFacebook(fd.facebook || '');
-          setFooterCtaText(fd.ctaText || '');
-          setFooterCtaUrl(fd.ctaUrl || '');
-          setFooterBgColor(fd.bgColor || '#1a1a2e');
-        } catch { /* not json yet */ }
+          setFooterFullName(fd.fullName || ''); setFooterAddress(fd.address || ''); setFooterPincode(fd.pincode || '');
+          setFooterWhatsapp(fd.whatsapp || ''); setFooterGoogleMap(fd.googleMap || ''); setFooterInstagram(fd.instagram || '');
+          setFooterYoutube(fd.youtube || ''); setFooterFacebook(fd.facebook || ''); setFooterCtaText(fd.ctaText || '');
+          setFooterCtaUrl(fd.ctaUrl || ''); setFooterBgColor(fd.bgColor || '#1a1a2e');
+        } catch {}
       }
 
-      // Load hero content
+      // Load hero
       const hero = contentMap.hero;
       if (hero?.content) {
         try {
           const hd = JSON.parse(hero.content);
-          setHeroTitle(hd.title || '');
-          setHeroSubtitle(hd.subtitle || '');
-          setHeroCtaText(hd.ctaText || '');
-          setHeroBgType(hd.bgType || 'gradient');
-        } catch { /* not json yet */ }
+          setHeroTitle(hd.title || ''); setHeroSubtitle(hd.subtitle || ''); setHeroCtaText(hd.ctaText || ''); setHeroBgType(hd.bgType || 'gradient');
+        } catch {}
       }
 
-      // Load billing/printer settings
+      // Load custom CSS
+      const cssContent = contentMap.custom_css;
+      if (cssContent?.content) setCustomCss(cssContent.content);
+
+      // Billing/printer
       const { data: ps } = await supabase.from('printer_settings').select('*').eq('business_id', business.id).maybeSingle();
-      if (ps) {
-        setInvoiceLogo(ps.show_logo ?? true);
-        setInvoiceFooter(ps.footer_text || 'Thank You! Visit Again');
-        setInvoiceStyle(ps.paper_size || 'classic');
-      }
+      if (ps) { setInvoiceLogo(ps.show_logo ?? true); setInvoiceFooter(ps.footer_text || 'Thank You! Visit Again'); setInvoiceStyle(ps.paper_size || 'classic'); }
       setInvoiceShopName(business.business_name || '');
     };
     fetchData();
-
-    // Load footer fields from business table
     setFooterWhatsapp((business as any).whatsapp_number || '');
     setFooterInstagram((business as any).instagram_handle || '');
     setFooterYoutube((business as any).youtube_handle || '');
@@ -149,6 +157,7 @@ const StoreManager = () => {
     setFooterFullName(business.business_name || '');
   }, [business?.id]);
 
+  // Handlers
   const handleUploadMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !business || !user) return;
@@ -163,126 +172,117 @@ const StoreManager = () => {
     await supabase.from('store_media').insert({ business_id: business.id, media_type: mediaType, url, title: file.name, sort_order: mediaItems.length });
     toast({ title: 'Uploaded!' });
     const { data } = await supabase.from('store_media').select('*').eq('business_id', business.id).order('sort_order');
-    setMediaItems(data || []);
-    setStats(s => ({ ...s, media: (data || []).length }));
-    setUploading(false);
+    setMediaItems(data || []); setStats(s => ({ ...s, media: (data || []).length })); setUploading(false);
   };
 
-  const handleDeleteMedia = async (id: string) => {
-    await supabase.from('store_media').delete().eq('id', id);
-    setMediaItems(prev => prev.filter(m => m.id !== id));
-    toast({ title: 'Removed' });
-  };
-
-  const handleToggleMedia = async (id: string, active: boolean) => {
-    await supabase.from('store_media').update({ is_active: !active }).eq('id', id);
-    setMediaItems(prev => prev.map(m => m.id === id ? { ...m, is_active: !active } : m));
-  };
+  const handleDeleteMedia = async (id: string) => { await supabase.from('store_media').delete().eq('id', id); setMediaItems(prev => prev.filter(m => m.id !== id)); toast({ title: 'Removed' }); };
+  const handleToggleMedia = async (id: string, active: boolean) => { await supabase.from('store_media').update({ is_active: !active }).eq('id', id); setMediaItems(prev => prev.map(m => m.id === id ? { ...m, is_active: !active } : m)); };
 
   const handleSaveTheme = async () => {
-    if (!business) return;
-    setSaving(true);
+    if (!business) return; setSaving(true);
     await supabase.from('businesses').update({ store_theme: storeTheme }).eq('id', business.id);
-    toast({ title: 'Theme saved!' });
-    refetch();
-    setSaving(false);
+    toast({ title: 'Theme saved!' }); refetch(); setSaving(false);
   };
 
   const handleSaveContent = async (key: string) => {
-    if (!business) return;
-    setSaving(true);
+    if (!business) return; setSaving(true);
     const c = contents[key];
-    const { error } = await supabase.from('store_content').upsert({
-      business_id: business.id, section_key: key, title: c.title, content: c.content, is_visible: c.is_visible,
-    }, { onConflict: 'business_id,section_key' });
+    const { error } = await supabase.from('store_content').upsert({ business_id: business.id, section_key: key, title: c.title, content: c.content, is_visible: c.is_visible }, { onConflict: 'business_id,section_key' });
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    else toast({ title: 'Content saved!' });
-    setSaving(false);
+    else toast({ title: 'Content saved!' }); setSaving(false);
   };
 
-  const handleApproveReview = async (id: string) => {
-    await supabase.from('product_reviews').update({ is_approved: true }).eq('id', id);
-    setPendingReviews(prev => prev.filter(r => r.id !== id));
-    toast({ title: 'Approved!' });
-  };
-
-  const handleDeleteReview = async (id: string) => {
-    await supabase.from('product_reviews').delete().eq('id', id);
-    setPendingReviews(prev => prev.filter(r => r.id !== id));
-    toast({ title: 'Deleted' });
-  };
+  const handleApproveReview = async (id: string) => { await supabase.from('product_reviews').update({ is_approved: true }).eq('id', id); setPendingReviews(prev => prev.filter(r => r.id !== id)); toast({ title: 'Approved!' }); };
+  const handleDeleteReview = async (id: string) => { await supabase.from('product_reviews').delete().eq('id', id); setPendingReviews(prev => prev.filter(r => r.id !== id)); toast({ title: 'Deleted' }); };
 
   const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !business || !user) return;
-    setLogoUploading(true);
-    const ext = file.name.split('.').pop();
-    const path = `${user.id}/logo-${Date.now()}.${ext}`;
+    if (!file || !business || !user) return; setLogoUploading(true);
+    const ext = file.name.split('.').pop(); const path = `${user.id}/logo-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from('store-media').upload(path, file, { cacheControl: '3600' });
     if (error) { toast({ title: 'Upload failed', variant: 'destructive' }); setLogoUploading(false); return; }
     const url = supabase.storage.from('store-media').getPublicUrl(path).data.publicUrl;
     await supabase.from('businesses').update({ logo_url: url } as any).eq('id', business.id);
-    toast({ title: 'Logo uploaded!' });
-    refetch();
-    setLogoUploading(false);
+    toast({ title: 'Logo uploaded!' }); refetch(); setLogoUploading(false);
   };
 
   const handleSaveFooter = async () => {
-    if (!business) return;
-    setSavingFooter(true);
-    // Save to business table
-    await supabase.from('businesses').update({
-      address: footerAddress.trim() || null,
-      whatsapp_number: footerWhatsapp.trim() || null,
-      instagram_handle: footerInstagram.trim() || null,
-      youtube_handle: footerYoutube.trim() || null,
-      google_map_url: footerGoogleMap.trim() || null,
-      pincode: footerPincode.trim() || null,
-    } as any).eq('id', business.id);
-    // Save footer JSON to store_content
-    const footerData = JSON.stringify({
-      fullName: footerFullName, address: footerAddress, pincode: footerPincode,
-      whatsapp: footerWhatsapp, googleMap: footerGoogleMap, instagram: footerInstagram,
-      youtube: footerYoutube, facebook: footerFacebook, ctaText: footerCtaText,
-      ctaUrl: footerCtaUrl, bgColor: footerBgColor,
-    });
-    await supabase.from('store_content').upsert({
-      business_id: business.id, section_key: 'footer', title: 'Footer', content: footerData, is_visible: true,
-    }, { onConflict: 'business_id,section_key' });
-    toast({ title: 'Footer saved!' });
-    refetch();
-    setSavingFooter(false);
+    if (!business) return; setSavingFooter(true);
+    await supabase.from('businesses').update({ address: footerAddress.trim() || null, whatsapp_number: footerWhatsapp.trim() || null, instagram_handle: footerInstagram.trim() || null, youtube_handle: footerYoutube.trim() || null, google_map_url: footerGoogleMap.trim() || null, pincode: footerPincode.trim() || null } as any).eq('id', business.id);
+    const footerData = JSON.stringify({ fullName: footerFullName, address: footerAddress, pincode: footerPincode, whatsapp: footerWhatsapp, googleMap: footerGoogleMap, instagram: footerInstagram, youtube: footerYoutube, facebook: footerFacebook, ctaText: footerCtaText, ctaUrl: footerCtaUrl, bgColor: footerBgColor });
+    await supabase.from('store_content').upsert({ business_id: business.id, section_key: 'footer', title: 'Footer', content: footerData, is_visible: true }, { onConflict: 'business_id,section_key' });
+    toast({ title: 'Footer saved!' }); refetch(); setSavingFooter(false);
   };
 
   const handleSaveHero = async () => {
-    if (!business) return;
-    setSavingHero(true);
+    if (!business) return; setSavingHero(true);
     const heroData = JSON.stringify({ title: heroTitle, subtitle: heroSubtitle, ctaText: heroCtaText, bgType: heroBgType });
-    await supabase.from('store_content').upsert({
-      business_id: business.id, section_key: 'hero', title: 'Hero Section', content: heroData, is_visible: true,
-    }, { onConflict: 'business_id,section_key' });
-    toast({ title: 'Hero section saved!' });
-    setSavingHero(false);
+    await supabase.from('store_content').upsert({ business_id: business.id, section_key: 'hero', title: 'Hero Section', content: heroData, is_visible: true }, { onConflict: 'business_id,section_key' });
+    toast({ title: 'Hero section saved!' }); setSavingHero(false);
   };
 
   const handleSaveBilling = async () => {
-    if (!business) return;
-    setSavingBilling(true);
-    // Update business name if changed
-    if (invoiceShopName !== business.business_name) {
-      await supabase.from('businesses').update({ business_name: invoiceShopName }).eq('id', business.id);
+    if (!business) return; setSavingBilling(true);
+    if (invoiceShopName !== business.business_name) await supabase.from('businesses').update({ business_name: invoiceShopName }).eq('id', business.id);
+    await supabase.from('printer_settings').upsert({ business_id: business.id, show_logo: invoiceLogo, footer_text: invoiceFooter, paper_size: invoiceStyle }, { onConflict: 'business_id' });
+    toast({ title: 'Billing settings saved!' }); refetch(); setSavingBilling(false);
+  };
+
+  const handleSaveCustomCss = async () => {
+    if (!business) return; setSavingCss(true);
+    await supabase.from('store_content').upsert({ business_id: business.id, section_key: 'custom_css', title: 'Custom CSS', content: customCss, is_visible: true }, { onConflict: 'business_id,section_key' });
+    toast({ title: 'Custom CSS saved!' }); setSavingCss(false);
+  };
+
+  // Happy customer handlers
+  const handleSearchCustomer = async (q: string) => {
+    setCustomerSearch(q);
+    if (!business || q.length < 2) { setCustomerResults([]); return; }
+    const { data } = await supabase.from('customers').select('*').eq('business_id', business.id).or(`full_name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
+    setCustomerResults(data || []);
+  };
+
+  const handleAddHappyCustomer = async (imgFile?: File) => {
+    if (!business || !user || !happyName.trim()) return;
+    setHappyUploading(true);
+    let imageUrl = '';
+    if (imgFile) {
+      const ext = imgFile.name.split('.').pop();
+      const path = `${user.id}/happy-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('store-media').upload(path, imgFile, { cacheControl: '3600' });
+      if (!error) imageUrl = supabase.storage.from('store-media').getPublicUrl(path).data.publicUrl;
     }
-    // Upsert printer settings
-    await supabase.from('printer_settings').upsert({
-      business_id: business.id, show_logo: invoiceLogo, footer_text: invoiceFooter, paper_size: invoiceStyle,
-    }, { onConflict: 'business_id' });
-    toast({ title: 'Billing settings saved!' });
-    refetch();
-    setSavingBilling(false);
+    await supabase.from('happy_customers').insert({ business_id: business.id, customer_name: happyName.trim(), title: happyTitle.trim() || null, vehicle_info: happyVehicle.trim() || null, image_url: imageUrl || null, sort_order: happyCustomers.length });
+    const { data } = await supabase.from('happy_customers').select('*').eq('business_id', business.id).order('sort_order');
+    setHappyCustomers(data || []);
+    setHappyName(''); setHappyTitle(''); setHappyVehicle(''); setCustomerSearch(''); setCustomerResults([]);
+    toast({ title: 'Happy customer added!' }); setHappyUploading(false);
+  };
+
+  const handleDeleteHappy = async (id: string) => {
+    await supabase.from('happy_customers').delete().eq('id', id);
+    setHappyCustomers(prev => prev.filter(h => h.id !== id));
+    toast({ title: 'Removed' });
   };
 
   const inputClass = "w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
   const labelClass = "text-xs font-medium text-muted-foreground mb-1.5 block";
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Globe },
+    { id: 'appearance', label: 'Theme', icon: Palette },
+    { id: 'hero', label: 'Hero', icon: Layout },
+    { id: 'media', label: 'Banners', icon: Image },
+    { id: 'footer', label: 'Footer', icon: MapPin },
+    { id: 'content', label: 'Pages', icon: FileText },
+    { id: 'offers', label: 'Offers', icon: Tag },
+    { id: 'billing', label: 'Billing', icon: Receipt },
+    { id: 'reviews', label: 'Reviews', icon: MessageSquare },
+    { id: 'happy', label: 'Happy Customers', icon: Heart },
+    { id: 'preview', label: 'Live Preview', icon: Eye },
+    { id: 'css', label: 'Custom CSS', icon: Code },
+    { id: 'seo', label: 'SEO & QR', icon: SearchIcon },
+  ];
 
   return (
     <div className="px-4 pt-4 lg:pl-24 max-w-5xl mx-auto space-y-5 pb-24">
@@ -304,19 +304,8 @@ const StoreManager = () => {
       )}
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full flex overflow-x-auto no-scrollbar gap-1 bg-transparent p-0 h-auto">
-          {[
-            { id: 'overview', label: 'Overview', icon: Globe },
-            { id: 'appearance', label: 'Theme', icon: Palette },
-            { id: 'hero', label: 'Hero', icon: Layout },
-            { id: 'media', label: 'Banners', icon: Image },
-            { id: 'footer', label: 'Footer', icon: MapPin },
-            { id: 'content', label: 'Pages', icon: FileText },
-            { id: 'offers', label: 'Offers', icon: Tag },
-            { id: 'billing', label: 'Billing', icon: Receipt },
-            { id: 'reviews', label: 'Reviews', icon: MessageSquare },
-            { id: 'seo', label: 'SEO & QR', icon: SearchIcon },
-          ].map(tab => {
+        <TabsList className="w-full flex overflow-x-auto no-scrollbar gap-1 bg-transparent p-0 h-auto flex-wrap">
+          {tabs.map(tab => {
             const Icon = tab.icon;
             return (
               <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground bg-secondary text-secondary-foreground">
@@ -351,7 +340,6 @@ const StoreManager = () => {
               <p className="text-xs text-muted-foreground mt-1">Go to Settings → Business Profile to set your store slug.</p>
             </div>
           )}
-          {/* Quick Actions */}
           <div className="grid grid-cols-2 gap-3">
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => window.location.href = '/workspace'}
               className="p-4 rounded-2xl glass-card shadow-soft flex items-center gap-3 hover:bg-muted/50 transition-colors">
@@ -388,33 +376,19 @@ const StoreManager = () => {
           </motion.button>
         </TabsContent>
 
-        {/* HERO SECTION EDITOR */}
+        {/* HERO */}
         <TabsContent value="hero" className="space-y-4 mt-4">
           <div className="rounded-2xl glass-card shadow-soft p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <Layout className="w-5 h-5 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Hero Section Editor</h3>
-            </div>
-            <div>
-              <label className={labelClass}>Title</label>
-              <input type="text" value={heroTitle} onChange={e => setHeroTitle(e.target.value)} placeholder="Welcome to our store" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Subtitle</label>
-              <input type="text" value={heroSubtitle} onChange={e => setHeroSubtitle(e.target.value)} placeholder="Best quality products at great prices" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>CTA Button Text</label>
-              <input type="text" value={heroCtaText} onChange={e => setHeroCtaText(e.target.value)} placeholder="Shop Now" className={inputClass} />
-            </div>
+            <div className="flex items-center gap-2"><Layout className="w-5 h-5 text-primary" /><h3 className="text-sm font-bold text-foreground">Hero Section Editor</h3></div>
+            <div><label className={labelClass}>Title</label><input type="text" value={heroTitle} onChange={e => setHeroTitle(e.target.value)} placeholder="Welcome to our store" className={inputClass} /></div>
+            <div><label className={labelClass}>Subtitle</label><input type="text" value={heroSubtitle} onChange={e => setHeroSubtitle(e.target.value)} placeholder="Best quality products" className={inputClass} /></div>
+            <div><label className={labelClass}>CTA Button Text</label><input type="text" value={heroCtaText} onChange={e => setHeroCtaText(e.target.value)} placeholder="Shop Now" className={inputClass} /></div>
             <div>
               <label className={labelClass}>Background Style</label>
               <div className="grid grid-cols-3 gap-2">
                 {['gradient', 'image', 'video'].map(bg => (
                   <button key={bg} onClick={() => setHeroBgType(bg)}
-                    className={`py-2 rounded-xl text-xs font-semibold capitalize transition-all ${heroBgType === bg ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
-                    {bg}
-                  </button>
+                    className={`py-2 rounded-xl text-xs font-semibold capitalize transition-all ${heroBgType === bg ? 'gradient-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>{bg}</button>
                 ))}
               </div>
             </div>
@@ -425,7 +399,7 @@ const StoreManager = () => {
           </div>
         </TabsContent>
 
-        {/* BANNERS / MEDIA */}
+        {/* MEDIA */}
         <TabsContent value="media" className="space-y-4 mt-4">
           <div className="rounded-2xl glass-card shadow-soft p-6 text-center space-y-3">
             <Upload className="w-10 h-10 mx-auto text-muted-foreground/30" />
@@ -457,104 +431,44 @@ const StoreManager = () => {
           )}
         </TabsContent>
 
-        {/* FOOTER EDITOR */}
+        {/* FOOTER */}
         <TabsContent value="footer" className="space-y-4 mt-4">
           <div className="rounded-2xl glass-card shadow-soft p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Footer Editor</h3>
-            </div>
-
-            {/* Logo Upload */}
+            <div className="flex items-center gap-2"><MapPin className="w-5 h-5 text-primary" /><h3 className="text-sm font-bold text-foreground">Footer Editor</h3></div>
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center overflow-hidden border border-border">
-                {(business as any)?.logo_url ? (
-                  <img src={(business as any).logo_url} alt="Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <Upload className="w-6 h-6 text-muted-foreground/30" />
-                )}
+                {(business as any)?.logo_url ? <img src={(business as any).logo_url} alt="Logo" className="w-full h-full object-cover" /> : <Upload className="w-6 h-6 text-muted-foreground/30" />}
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">Store Logo</p>
                 <input ref={logoRef} type="file" accept="image/*" onChange={handleUploadLogo} className="hidden" />
-                <button onClick={() => logoRef.current?.click()} disabled={logoUploading}
-                  className="mt-1 text-xs text-primary font-semibold hover:underline flex items-center gap-1">
+                <button onClick={() => logoRef.current?.click()} disabled={logoUploading} className="mt-1 text-xs text-primary font-semibold hover:underline flex items-center gap-1">
                   {logoUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />} Upload Logo
                 </button>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>Full Name / Store Name</label>
-                <input type="text" value={footerFullName} onChange={e => setFooterFullName(e.target.value)} placeholder="Store name" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>WhatsApp Number</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <input type="tel" value={footerWhatsapp} onChange={e => setFooterWhatsapp(e.target.value)} placeholder="+91..." className={`${inputClass} pl-9`} />
-                </div>
-              </div>
+              <div><label className={labelClass}>Store Name</label><input type="text" value={footerFullName} onChange={e => setFooterFullName(e.target.value)} placeholder="Store name" className={inputClass} /></div>
+              <div><label className={labelClass}>WhatsApp</label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><input type="tel" value={footerWhatsapp} onChange={e => setFooterWhatsapp(e.target.value)} placeholder="+91..." className={`${inputClass} pl-9`} /></div></div>
             </div>
-
-            <div>
-              <label className={labelClass}>Address</label>
-              <textarea value={footerAddress} onChange={e => setFooterAddress(e.target.value)} rows={2} placeholder="Full address..." className={`${inputClass} resize-none`} />
-            </div>
-
+            <div><label className={labelClass}>Address</label><textarea value={footerAddress} onChange={e => setFooterAddress(e.target.value)} rows={2} placeholder="Full address..." className={`${inputClass} resize-none`} /></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>Pincode</label>
-                <input type="text" value={footerPincode} onChange={e => setFooterPincode(e.target.value)} placeholder="110001" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Google Maps URL</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <input type="url" value={footerGoogleMap} onChange={e => setFooterGoogleMap(e.target.value)} placeholder="https://maps.google.com/..." className={`${inputClass} pl-9`} />
-                </div>
-              </div>
+              <div><label className={labelClass}>Pincode</label><input type="text" value={footerPincode} onChange={e => setFooterPincode(e.target.value)} placeholder="110001" className={inputClass} /></div>
+              <div><label className={labelClass}>Google Maps URL</label><div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><input type="url" value={footerGoogleMap} onChange={e => setFooterGoogleMap(e.target.value)} placeholder="https://maps.google.com/..." className={`${inputClass} pl-9`} /></div></div>
             </div>
-
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Social Media</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="relative">
-                  <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-pink-500" />
-                  <input type="text" value={footerInstagram} onChange={e => setFooterInstagram(e.target.value)} placeholder="Instagram handle" className={`${inputClass} pl-9`} />
-                </div>
-                <div className="relative">
-                  <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-red-500" />
-                  <input type="text" value={footerYoutube} onChange={e => setFooterYoutube(e.target.value)} placeholder="YouTube handle" className={`${inputClass} pl-9`} />
-                </div>
-                <div className="relative">
-                  <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-blue-500" />
-                  <input type="text" value={footerFacebook} onChange={e => setFooterFacebook(e.target.value)} placeholder="Facebook page" className={`${inputClass} pl-9`} />
-                </div>
+                <div className="relative"><Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-pink-500" /><input type="text" value={footerInstagram} onChange={e => setFooterInstagram(e.target.value)} placeholder="Instagram" className={`${inputClass} pl-9`} /></div>
+                <div className="relative"><Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-red-500" /><input type="text" value={footerYoutube} onChange={e => setFooterYoutube(e.target.value)} placeholder="YouTube" className={`${inputClass} pl-9`} /></div>
+                <div className="relative"><Facebook className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-blue-500" /><input type="text" value={footerFacebook} onChange={e => setFooterFacebook(e.target.value)} placeholder="Facebook" className={`${inputClass} pl-9`} /></div>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>CTA Button Text</label>
-                <input type="text" value={footerCtaText} onChange={e => setFooterCtaText(e.target.value)} placeholder="Contact Us" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>CTA Button URL</label>
-                <input type="url" value={footerCtaUrl} onChange={e => setFooterCtaUrl(e.target.value)} placeholder="https://..." className={inputClass} />
-              </div>
+              <div><label className={labelClass}>CTA Text</label><input type="text" value={footerCtaText} onChange={e => setFooterCtaText(e.target.value)} placeholder="Contact Us" className={inputClass} /></div>
+              <div><label className={labelClass}>CTA URL</label><input type="url" value={footerCtaUrl} onChange={e => setFooterCtaUrl(e.target.value)} placeholder="https://..." className={inputClass} /></div>
             </div>
-
-            <div>
-              <label className={labelClass}>Footer Background Color</label>
-              <div className="flex items-center gap-3">
-                <input type="color" value={footerBgColor} onChange={e => setFooterBgColor(e.target.value)} className="w-10 h-10 rounded-xl border border-border cursor-pointer" />
-                <input type="text" value={footerBgColor} onChange={e => setFooterBgColor(e.target.value)} className={`${inputClass} flex-1`} />
-              </div>
-            </div>
-
-            {/* Footer Preview */}
+            <div><label className={labelClass}>Background Color</label><div className="flex items-center gap-3"><input type="color" value={footerBgColor} onChange={e => setFooterBgColor(e.target.value)} className="w-10 h-10 rounded-xl border border-border cursor-pointer" /><input type="text" value={footerBgColor} onChange={e => setFooterBgColor(e.target.value)} className={`${inputClass} flex-1`} /></div></div>
             <div className="rounded-xl overflow-hidden" style={{ backgroundColor: footerBgColor }}>
               <div className="p-4 text-white/90 text-center space-y-2">
                 {(business as any)?.logo_url && <img src={(business as any).logo_url} alt="" className="w-10 h-10 rounded-lg mx-auto object-cover" />}
@@ -569,7 +483,6 @@ const StoreManager = () => {
                 {footerCtaText && <button className="px-4 py-1.5 rounded-full bg-white/20 text-xs font-semibold">{footerCtaText}</button>}
               </div>
             </div>
-
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleSaveFooter} disabled={savingFooter}
               className="w-full py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
               {savingFooter ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Footer
@@ -577,9 +490,9 @@ const StoreManager = () => {
           </div>
         </TabsContent>
 
-        {/* PAGES/CONTENT */}
+        {/* PAGES */}
         <TabsContent value="content" className="space-y-4 mt-4">
-          {Object.entries(contents).filter(([key]) => !['footer', 'hero'].includes(key)).map(([key, c]) => (
+          {Object.entries(contents).filter(([key]) => !['footer', 'hero', 'custom_css'].includes(key)).map(([key, c]) => (
             <div key={key} className="rounded-2xl glass-card shadow-soft p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-foreground capitalize">{key.replace('_', ' ')} Section</h3>
@@ -588,10 +501,8 @@ const StoreManager = () => {
                   {c.is_visible ? 'Visible' : 'Hidden'}
                 </button>
               </div>
-              <input type="text" value={c.title} onChange={e => setContents(prev => ({ ...prev, [key]: { ...prev[key], title: e.target.value } }))}
-                placeholder="Section Title" className={inputClass} />
-              <textarea value={c.content} onChange={e => setContents(prev => ({ ...prev, [key]: { ...prev[key], content: e.target.value } }))}
-                placeholder="Content..." rows={4} className={`${inputClass} resize-none`} />
+              <input type="text" value={c.title} onChange={e => setContents(prev => ({ ...prev, [key]: { ...prev[key], title: e.target.value } }))} placeholder="Section Title" className={inputClass} />
+              <textarea value={c.content} onChange={e => setContents(prev => ({ ...prev, [key]: { ...prev[key], content: e.target.value } }))} placeholder="Content..." rows={4} className={`${inputClass} resize-none`} />
               <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleSaveContent(key)} disabled={saving}
                 className="px-4 py-2 rounded-xl gradient-primary text-primary-foreground text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-50">
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save
@@ -621,57 +532,33 @@ const StoreManager = () => {
           ))}
         </TabsContent>
 
-        {/* BILLING SETTINGS */}
+        {/* BILLING */}
         <TabsContent value="billing" className="space-y-4 mt-4">
           <div className="rounded-2xl glass-card shadow-soft p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <Receipt className="w-5 h-5 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Invoice Customization</h3>
-            </div>
-
+            <div className="flex items-center gap-2"><Receipt className="w-5 h-5 text-primary" /><h3 className="text-sm font-bold text-foreground">Invoice Customization</h3></div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
-              <div>
-                <p className="text-sm font-semibold text-foreground">Show Logo on Invoice</p>
-                <p className="text-[10px] text-muted-foreground">Display your store logo on printed bills</p>
-              </div>
+              <div><p className="text-sm font-semibold text-foreground">Show Logo on Invoice</p><p className="text-[10px] text-muted-foreground">Display your store logo on printed bills</p></div>
               <Switch checked={invoiceLogo} onCheckedChange={setInvoiceLogo} />
             </div>
-
-            <div>
-              <label className={labelClass}>Shop Name on Invoice</label>
-              <input type="text" value={invoiceShopName} onChange={e => setInvoiceShopName(e.target.value)} placeholder="Your Shop Name" className={inputClass} />
-            </div>
-
-            <div>
-              <label className={labelClass}>Invoice Footer Text</label>
-              <input type="text" value={invoiceFooter} onChange={e => setInvoiceFooter(e.target.value)} placeholder="Thank You! Visit Again" className={inputClass} />
-            </div>
-
+            <div><label className={labelClass}>Shop Name on Invoice</label><input type="text" value={invoiceShopName} onChange={e => setInvoiceShopName(e.target.value)} placeholder="Your Shop Name" className={inputClass} /></div>
+            <div><label className={labelClass}>Invoice Footer Text</label><input type="text" value={invoiceFooter} onChange={e => setInvoiceFooter(e.target.value)} placeholder="Thank You! Visit Again" className={inputClass} /></div>
             <div>
               <label className={labelClass}>Invoice Style</label>
               <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'classic', label: 'Classic', desc: '58mm thermal' },
-                  { id: '80mm', label: 'Wide', desc: '80mm thermal' },
-                  { id: 'a4', label: 'A4', desc: 'Full page' },
-                ].map(style => (
+                {[{ id: 'classic', label: 'Classic', desc: '58mm thermal' }, { id: '80mm', label: 'Wide', desc: '80mm thermal' }, { id: 'a4', label: 'A4', desc: 'Full page' }].map(style => (
                   <button key={style.id} onClick={() => setInvoiceStyle(style.id)}
                     className={`p-3 rounded-xl border-2 text-center transition-all ${invoiceStyle === style.id ? 'border-primary bg-primary/5' : 'border-border bg-card hover:bg-muted'}`}>
-                    <p className="text-xs font-semibold text-foreground">{style.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{style.desc}</p>
+                    <p className="text-xs font-semibold text-foreground">{style.label}</p><p className="text-[10px] text-muted-foreground">{style.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* Invoice Preview Mini */}
             <div className="rounded-xl bg-white text-black p-4 text-center space-y-1 border border-border">
               {invoiceLogo && (business as any)?.logo_url && <img src={(business as any).logo_url} alt="" className="w-8 h-8 mx-auto rounded" />}
               <p className="text-sm font-bold">{invoiceShopName || 'Shop Name'}</p>
               <p className="text-[10px] text-gray-400">--- Invoice Preview ---</p>
               <p className="text-[10px] text-gray-500">{invoiceFooter}</p>
             </div>
-
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleSaveBilling} disabled={savingBilling}
               className="w-full py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
               {savingBilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Billing Settings
@@ -697,6 +584,115 @@ const StoreManager = () => {
           ))}
         </TabsContent>
 
+        {/* HAPPY CUSTOMERS */}
+        <TabsContent value="happy" className="space-y-4 mt-4">
+          <div className="rounded-2xl glass-card shadow-soft p-5 space-y-4">
+            <div className="flex items-center gap-2"><Heart className="w-5 h-5 text-rose-500" /><h3 className="text-sm font-bold text-foreground">Happy Customers Showcase</h3></div>
+            <p className="text-xs text-muted-foreground">Add customers/vehicles you've serviced to showcase on your store.</p>
+
+            {/* Search existing customer */}
+            <div>
+              <label className={labelClass}>Search Existing Customer</label>
+              <input type="text" value={customerSearch} onChange={e => handleSearchCustomer(e.target.value)} placeholder="Search by name or phone..." className={inputClass} />
+              {customerResults.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {customerResults.map(c => (
+                    <button key={c.id} onClick={() => { setHappyName(c.full_name); setHappyVehicle(c.vehicle_number || ''); setCustomerSearch(''); setCustomerResults([]); }}
+                      className="w-full text-left px-3 py-2 rounded-lg bg-muted hover:bg-primary/10 text-sm flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" /> {c.full_name} {c.phone && <span className="text-xs text-muted-foreground">({c.phone})</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div><label className={labelClass}>Customer Name *</label><input type="text" value={happyName} onChange={e => setHappyName(e.target.value)} placeholder="Name" className={inputClass} /></div>
+              <div><label className={labelClass}>Title / Label</label><input type="text" value={happyTitle} onChange={e => setHappyTitle(e.target.value)} placeholder="e.g. Ceramic Coating" className={inputClass} /></div>
+            </div>
+            <div><label className={labelClass}>Vehicle Info</label><input type="text" value={happyVehicle} onChange={e => setHappyVehicle(e.target.value)} placeholder="e.g. Honda City - MH 02 AB 1234" className={inputClass} /></div>
+            <div>
+              <label className={labelClass}>Photo (optional)</label>
+              <input ref={happyImgRef} type="file" accept="image/*" className="hidden" onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) handleAddHappyCustomer(file);
+              }} />
+              <div className="flex gap-2">
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => happyImgRef.current?.click()} disabled={happyUploading || !happyName.trim()}
+                  className="flex-1 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                  {happyUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Add with Photo
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleAddHappyCustomer()} disabled={happyUploading || !happyName.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-semibold disabled:opacity-50">
+                  Add without Photo
+                </motion.button>
+              </div>
+            </div>
+          </div>
+
+          {/* List */}
+          {happyCustomers.length === 0 ? (
+            <div className="text-center py-8 rounded-2xl glass-card"><Heart className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" /><p className="text-sm text-muted-foreground">No happy customers added yet</p></div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {happyCustomers.map(h => (
+                <div key={h.id} className="rounded-2xl glass-card shadow-soft overflow-hidden">
+                  <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+                    {h.image_url ? <img src={h.image_url} alt={h.customer_name} className="w-full h-full object-cover" /> : <Users className="w-10 h-10 text-muted-foreground/30" />}
+                  </div>
+                  <div className="p-3 space-y-1">
+                    <p className="text-sm font-bold text-foreground truncate">{h.customer_name}</p>
+                    {h.title && <p className="text-[10px] text-primary font-medium">{h.title}</p>}
+                    {h.vehicle_info && <p className="text-[10px] text-muted-foreground">{h.vehicle_info}</p>}
+                    <button onClick={() => handleDeleteHappy(h.id)} className="mt-1 text-[10px] text-destructive font-semibold hover:underline flex items-center gap-1">
+                      <Trash2 className="w-3 h-3" /> Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* LIVE PREVIEW */}
+        <TabsContent value="preview" className="space-y-4 mt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-foreground">Live Store Preview</h3>
+            <div className="flex gap-2">
+              <button onClick={() => setPreviewDevice('mobile')} className={`p-2 rounded-lg ${previewDevice === 'mobile' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
+                <Smartphone className="w-4 h-4" />
+              </button>
+              <button onClick={() => setPreviewDevice('desktop')} className={`p-2 rounded-lg ${previewDevice === 'desktop' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
+                <Monitor className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          {storeUrl ? (
+            <div className={`mx-auto border border-border rounded-2xl overflow-hidden bg-card shadow-elevated transition-all ${previewDevice === 'mobile' ? 'w-[375px] h-[667px]' : 'w-full h-[600px]'}`}>
+              <iframe src={storeUrl} className="w-full h-full" title="Store Preview" />
+            </div>
+          ) : (
+            <div className="text-center py-12 rounded-2xl glass-card">
+              <Globe className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Set your store slug in Settings to preview</p>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* CUSTOM CSS */}
+        <TabsContent value="css" className="space-y-4 mt-4">
+          <div className="rounded-2xl glass-card shadow-soft p-5 space-y-4">
+            <div className="flex items-center gap-2"><Code className="w-5 h-5 text-primary" /><h3 className="text-sm font-bold text-foreground">Custom CSS</h3></div>
+            <p className="text-xs text-muted-foreground">Add custom CSS to further style your store. Changes apply to your public store page.</p>
+            <textarea value={customCss} onChange={e => setCustomCss(e.target.value)} rows={12} placeholder={`/* Custom styles */\n.store-hero {\n  background: linear-gradient(...);\n}`}
+              className={`${inputClass} font-mono text-xs resize-none`} />
+            <motion.button whileTap={{ scale: 0.97 }} onClick={handleSaveCustomCss} disabled={savingCss}
+              className="w-full py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+              {savingCss ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save CSS
+            </motion.button>
+          </div>
+        </TabsContent>
+
         {/* SEO & QR */}
         <TabsContent value="seo" className="space-y-4 mt-4">
           {storeUrl && (
@@ -708,10 +704,8 @@ const StoreManager = () => {
           )}
           <div className="rounded-2xl glass-card shadow-soft p-4 space-y-3">
             <h3 className="text-sm font-semibold text-foreground">SEO Settings</h3>
-            <input type="text" value={seoTitle || business?.business_name || ''} onChange={e => setSeoTitle(e.target.value)}
-              placeholder="Page Title" className={inputClass} />
-            <textarea value={seoDesc} onChange={e => setSeoDesc(e.target.value)} rows={3} placeholder="Meta description..."
-              className={`${inputClass} resize-none`} />
+            <input type="text" value={seoTitle || business?.business_name || ''} onChange={e => setSeoTitle(e.target.value)} placeholder="Page Title" className={inputClass} />
+            <textarea value={seoDesc} onChange={e => setSeoDesc(e.target.value)} rows={3} placeholder="Meta description..." className={`${inputClass} resize-none`} />
           </div>
         </TabsContent>
       </Tabs>

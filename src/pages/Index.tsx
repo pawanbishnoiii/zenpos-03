@@ -66,13 +66,15 @@ const platformStats = [
   { val: '10', label: 'Store Themes', icon: Eye },
 ];
 
-const horizontalFeatures = [
-  { icon: ScanLine, title: 'Smart Billing', desc: 'Scan, bill, and print in seconds with barcode support', color: 'from-orange-500 to-red-500' },
-  { icon: Globe, title: 'Online Store', desc: '10+ premium themes for your public storefront', color: 'from-blue-500 to-cyan-500' },
-  { icon: Users, title: 'CRM Built-in', desc: 'Track every customer visit, spending, and vehicle', color: 'from-green-500 to-emerald-500' },
-  { icon: BarChart3, title: 'Analytics', desc: 'Revenue reports, expense tracking, credit ledger', color: 'from-purple-500 to-pink-500' },
-  { icon: Printer, title: 'Print Anywhere', desc: 'Bluetooth, WiFi, USB printer support for 9+ brands', color: 'from-amber-500 to-orange-500' },
-  { icon: Shield, title: 'Secure Cloud', desc: 'End-to-end encryption with automatic daily backups', color: 'from-teal-500 to-cyan-500' },
+const horizontalCards = [
+  { icon: ScanLine, title: 'Smart Billing', desc: 'Scan barcodes, auto-calculate tax, print thermal receipts — all in under 10 seconds per bill.', color: 'from-orange-500 to-red-500', stat: '10x', statLabel: 'Faster Checkout' },
+  { icon: Globe, title: 'Online Store', desc: '10+ premium themes with SEO, QR codes, reviews, and WhatsApp ordering built-in.', color: 'from-blue-500 to-cyan-500', stat: '10+', statLabel: 'Theme Options' },
+  { icon: Users, title: 'CRM Built-in', desc: 'Auto-save every customer visit, vehicle info, credit ledger, and spending history.', color: 'from-green-500 to-emerald-500', stat: '40%', statLabel: 'More Repeat Biz' },
+  { icon: BarChart3, title: 'Analytics', desc: 'Revenue trends, expense tracking, profit margins — all visualized in beautiful charts.', color: 'from-purple-500 to-pink-500', stat: '24/7', statLabel: 'Real-time Data' },
+  { icon: Printer, title: 'Print Anywhere', desc: 'Bluetooth, WiFi, USB printer support for Epson, Canon, HP, SUNMI, and 5+ more brands.', color: 'from-amber-500 to-orange-500', stat: '9+', statLabel: 'Printer Brands' },
+  { icon: Shield, title: 'Secure Cloud', desc: 'End-to-end encryption, automatic daily backups, row-level security for every business.', color: 'from-teal-500 to-cyan-500', stat: '99.9%', statLabel: 'Uptime SLA' },
+  { icon: Smartphone, title: 'Mobile First', desc: 'Touch-optimized interface that works beautifully on any phone or tablet.', color: 'from-rose-500 to-pink-500', stat: '100%', statLabel: 'Responsive' },
+  { icon: MessageSquare, title: 'WhatsApp', desc: 'Share bills, store links, and receipts directly via WhatsApp with one tap.', color: 'from-emerald-500 to-green-600', stat: '1-Tap', statLabel: 'Bill Sharing' },
 ];
 
 const Index = () => {
@@ -98,12 +100,10 @@ const Index = () => {
   // GSAP Animations
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Hero elastic tween
       gsap.from('.hero-title', { y: 80, opacity: 0, duration: 1.2, ease: 'elastic.out(1, 0.5)', delay: 0.2 });
       gsap.from('.hero-subtitle', { y: 40, opacity: 0, duration: 0.8, ease: 'power3.out', delay: 0.5 });
       gsap.from('.hero-cta', { scale: 0.5, opacity: 0, duration: 0.6, ease: 'back.out(1.7)', delay: 0.8 });
 
-      // Scroll-triggered section reveals
       gsap.utils.toArray<HTMLElement>('.gsap-reveal').forEach(el => {
         gsap.from(el, {
           y: 60, opacity: 0, duration: 0.8, ease: 'power3.out',
@@ -111,7 +111,6 @@ const Index = () => {
         });
       });
 
-      // Parallax on dashboard preview
       if (dashboardRef.current) {
         gsap.to('.dashboard-desktop', {
           y: -40, ease: 'none',
@@ -123,19 +122,16 @@ const Index = () => {
         });
       }
 
-      // Horizontal scroll section
+      // Horizontal scroll
       if (horizontalRef.current && horizontalTrackRef.current) {
         const track = horizontalTrackRef.current;
         gsap.to(track, {
           x: () => -(track.scrollWidth - window.innerWidth + 80),
           ease: 'none',
           scrollTrigger: {
-            trigger: horizontalRef.current,
-            start: 'top top',
+            trigger: horizontalRef.current, start: 'top top',
             end: () => `+=${track.scrollWidth - window.innerWidth + 200}`,
-            scrub: 1,
-            pin: true,
-            anticipatePin: 1,
+            scrub: 1, pin: true, anticipatePin: 1,
           }
         });
       }
@@ -151,21 +147,18 @@ const Index = () => {
       });
     });
 
-    // Anime.js micro-interactions on buttons
-    animeAnimate('.anime-float', {
-      translateY: [-5, 5],
-      duration: 3000,
-      direction: 'alternate',
-      ease: 'inOutSine',
-      loop: true,
-    });
+    try {
+      animeAnimate('.anime-float', {
+        translateY: [-5, 5], duration: 3000, direction: 'alternate', ease: 'inOutSine', loop: true,
+      });
+    } catch {}
 
     return () => ctx.revert();
   }, []);
 
   return (
     <div className="min-h-screen bg-background overflow-hidden relative">
-      {/* Animated Grid Background */}
+      {/* Grid Background */}
       <div className="pointer-events-none fixed inset-0 opacity-15" style={{
         backgroundImage: 'linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px)',
         backgroundSize: '40px 40px', maskImage: 'radial-gradient(circle at center, black 20%, transparent 75%)',
@@ -176,7 +169,7 @@ const Index = () => {
       <motion.div animate={{ y: [0, -20, 0], x: [0, 10, 0] }} transition={{ duration: 8, repeat: Infinity }} className="pointer-events-none fixed top-32 left-[10%] w-64 h-64 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, hsl(var(--primary)), transparent)' }} />
       <motion.div animate={{ y: [0, 20, 0], x: [0, -15, 0] }} transition={{ duration: 10, repeat: Infinity }} className="pointer-events-none fixed top-64 right-[15%] w-48 h-48 rounded-full opacity-8" style={{ background: 'radial-gradient(circle, hsl(var(--accent)), transparent)' }} />
 
-      {/* Sticky Navbar */}
+      {/* Navbar */}
       <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
         <div className="flex items-center justify-between px-4 md:px-8 py-3 max-w-6xl mx-auto">
           <div className="flex items-center gap-2">
@@ -203,7 +196,7 @@ const Index = () => {
       </nav>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8">
-        {/* Hero Section with GSAP */}
+        {/* Hero */}
         <section ref={heroRef} className="pt-16 pb-20 md:pt-24 md:pb-32 text-center space-y-8">
           <div>
             <motion.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}
@@ -232,7 +225,7 @@ const Index = () => {
             </motion.button>
           </div>
 
-          {/* Platform Stats with counters */}
+          {/* Stats */}
           <div className="flex items-center justify-center gap-6 md:gap-10 pt-8">
             {platformStats.map((s, i) => {
               const Icon = s.icon;
@@ -254,7 +247,7 @@ const Index = () => {
           </motion.div>
         </section>
 
-        {/* Dashboard Preview with Parallax */}
+        {/* Dashboard Preview */}
         <section ref={dashboardRef} className="gsap-reveal py-16 md:py-20">
           <div className="text-center space-y-3 mb-10">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">Live Preview</span>
@@ -262,7 +255,6 @@ const Index = () => {
             <p className="text-sm text-muted-foreground">See how your business looks on desktop and mobile</p>
           </div>
           <div className="relative max-w-4xl mx-auto">
-            {/* Desktop frame */}
             <div className="dashboard-desktop rounded-3xl overflow-hidden border border-border/50 shadow-elevated bg-card">
               <div className="h-8 bg-secondary flex items-center gap-1.5 px-4">
                 <div className="w-3 h-3 rounded-full bg-destructive/50" />
@@ -272,7 +264,6 @@ const Index = () => {
               </div>
               <img src="/images/dashboard-desktop.png" alt="Zen POS Dashboard Desktop View" className="w-full" loading="lazy" />
             </div>
-            {/* Mobile phone overlay */}
             <div className="dashboard-mobile absolute -right-4 md:right-8 -bottom-8 w-32 md:w-48">
               <div className="rounded-3xl overflow-hidden border-4 border-foreground/10 shadow-2xl bg-card">
                 <div className="h-6 bg-foreground/5 flex items-center justify-center">
@@ -282,7 +273,6 @@ const Index = () => {
               </div>
             </div>
           </div>
-          {/* Second desktop screenshot */}
           <div className="dashboard-desktop mt-12 rounded-3xl overflow-hidden border border-border/50 shadow-elevated bg-card max-w-4xl mx-auto">
             <div className="h-8 bg-secondary flex items-center gap-1.5 px-4">
               <div className="w-3 h-3 rounded-full bg-destructive/50" />
@@ -369,26 +359,42 @@ const Index = () => {
         </section>
       </div>
 
-      {/* Horizontal Scroll Section - Full width */}
+      {/* Horizontal Scroll with Creative Cards */}
       <section ref={horizontalRef} className="relative h-screen flex items-center overflow-hidden bg-gradient-to-r from-background via-card to-background">
         <div className="absolute inset-0 opacity-5" style={{
           backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 1px)',
           backgroundSize: '32px 32px',
         }} />
-        <div ref={horizontalTrackRef} className="flex gap-6 px-[10vw] items-center">
-          <div className="min-w-[40vw] md:min-w-[30vw] shrink-0">
+        <div ref={horizontalTrackRef} className="flex gap-8 px-[10vw] items-center">
+          <div className="min-w-[40vw] md:min-w-[30vw] shrink-0 pr-4">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">Why Choose Us</span>
             <h2 className="text-3xl md:text-5xl font-bold font-display text-foreground mt-2">Built for<br /><span className="gradient-primary-text">Indian Businesses</span></h2>
+            <p className="text-sm text-muted-foreground mt-3 max-w-xs">Scroll to explore the powerful features that make ZEN POS the #1 choice.</p>
           </div>
-          {horizontalFeatures.map((f, i) => {
+          {horizontalCards.map((f, i) => {
             const Icon = f.icon;
             return (
-              <div key={f.title} className="min-w-[300px] md:min-w-[350px] shrink-0 rounded-3xl glass-card shadow-elevated p-8 space-y-4 hover:scale-[1.02] transition-transform">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${f.color} flex items-center justify-center shadow-lg`}>
-                  <Icon className="w-8 h-8 text-white" />
+              <div key={f.title} className="min-w-[320px] md:min-w-[380px] shrink-0 rounded-3xl glass-card shadow-elevated p-0 overflow-hidden hover:scale-[1.02] transition-transform group">
+                {/* Card gradient header */}
+                <div className={`bg-gradient-to-br ${f.color} p-6 pb-10 relative`}>
+                  <div className="absolute top-4 right-4 w-20 h-20 rounded-full bg-white/10 blur-2xl" />
+                  <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3">
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">{f.title}</h3>
                 </div>
-                <h3 className="text-lg font-bold text-foreground">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                {/* Card body */}
+                <div className="p-6 -mt-4 relative">
+                  {/* Floating stat badge */}
+                  <div className="absolute -top-6 right-6 px-4 py-2 rounded-2xl bg-card border border-border shadow-lg text-center">
+                    <p className="text-lg font-black gradient-primary-text">{f.stat}</p>
+                    <p className="text-[9px] text-muted-foreground font-medium">{f.statLabel}</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-4">{f.desc}</p>
+                  <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-primary group-hover:gap-2 transition-all">
+                    Learn more <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -418,7 +424,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Dynamic Pricing from DB */}
+        {/* Dynamic Pricing */}
         <section id="pricing" className="gsap-reveal py-16 md:py-20 space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">Pricing Plans</span>
@@ -438,9 +444,7 @@ const Index = () => {
                 return (
                   <motion.div key={plan.id} whileHover={{ y: -6, scale: 1.02 }}
                     className={`rounded-3xl glass-card p-7 space-y-5 relative overflow-hidden transition-all ${isPopular ? 'shadow-elevated border-2 border-primary/30 ring-2 ring-primary/10' : 'shadow-soft border border-border/50'}`}>
-                    {isPopular && (
-                      <div className="absolute top-0 inset-x-0 h-1 gradient-primary" />
-                    )}
+                    {isPopular && <div className="absolute top-0 inset-x-0 h-1 gradient-primary" />}
                     {isPopular && (
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                         <Crown className="w-3 h-3" /> Most Popular
