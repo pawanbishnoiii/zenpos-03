@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_apk_settings: {
+        Row: {
+          apk_url: string | null
+          created_at: string
+          id: string
+          push_notification_key: string | null
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          apk_url?: string | null
+          created_at?: string
+          id?: string
+          push_notification_key?: string | null
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          apk_url?: string | null
+          created_at?: string
+          id?: string
+          push_notification_key?: string | null
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       business_offers: {
         Row: {
           business_id: string
@@ -113,17 +140,20 @@ export type Database = {
           category: string
           contact_email: string | null
           created_at: string
+          customer_auth_enabled: boolean | null
           google_map_url: string | null
           gst_number: string | null
           id: string
           instagram_handle: string | null
           logo_url: string | null
+          owner_card_visible: boolean | null
           owner_id: string
           phone: string | null
           pincode: string | null
           printer_type: string | null
           store_slug: string | null
           store_theme: string | null
+          tagline: string | null
           theme: string | null
           updated_at: string
           upi_id: string | null
@@ -136,17 +166,20 @@ export type Database = {
           category?: string
           contact_email?: string | null
           created_at?: string
+          customer_auth_enabled?: boolean | null
           google_map_url?: string | null
           gst_number?: string | null
           id?: string
           instagram_handle?: string | null
           logo_url?: string | null
+          owner_card_visible?: boolean | null
           owner_id: string
           phone?: string | null
           pincode?: string | null
           printer_type?: string | null
           store_slug?: string | null
           store_theme?: string | null
+          tagline?: string | null
           theme?: string | null
           updated_at?: string
           upi_id?: string | null
@@ -159,17 +192,20 @@ export type Database = {
           category?: string
           contact_email?: string | null
           created_at?: string
+          customer_auth_enabled?: boolean | null
           google_map_url?: string | null
           gst_number?: string | null
           id?: string
           instagram_handle?: string | null
           logo_url?: string | null
+          owner_card_visible?: boolean | null
           owner_id?: string
           phone?: string | null
           pincode?: string | null
           printer_type?: string | null
           store_slug?: string | null
           store_theme?: string | null
+          tagline?: string | null
           theme?: string | null
           updated_at?: string
           upi_id?: string | null
@@ -391,6 +427,39 @@ export type Database = {
         }
         Relationships: []
       }
+      happy_customers: {
+        Row: {
+          business_id: string
+          created_at: string
+          customer_name: string
+          id: string
+          image_url: string | null
+          sort_order: number
+          title: string | null
+          vehicle_info: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          image_url?: string | null
+          sort_order?: number
+          title?: string | null
+          vehicle_info?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          image_url?: string | null
+          sort_order?: number
+          title?: string | null
+          vehicle_info?: string | null
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           id: string
@@ -533,9 +602,14 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string
+          custom_footer: string | null
+          custom_header: string | null
+          font_size: string | null
           footer_text: string | null
           header_text: string | null
           id: string
+          layout_type: string | null
+          logo_url: string | null
           paper_size: string | null
           show_barcode: boolean | null
           show_logo: boolean | null
@@ -543,9 +617,14 @@ export type Database = {
         Insert: {
           business_id: string
           created_at?: string
+          custom_footer?: string | null
+          custom_header?: string | null
+          font_size?: string | null
           footer_text?: string | null
           header_text?: string | null
           id?: string
+          layout_type?: string | null
+          logo_url?: string | null
           paper_size?: string | null
           show_barcode?: boolean | null
           show_logo?: boolean | null
@@ -553,9 +632,14 @@ export type Database = {
         Update: {
           business_id?: string
           created_at?: string
+          custom_footer?: string | null
+          custom_header?: string | null
+          font_size?: string | null
           footer_text?: string | null
           header_text?: string | null
           id?: string
+          layout_type?: string | null
+          logo_url?: string | null
           paper_size?: string | null
           show_barcode?: boolean | null
           show_logo?: boolean | null
@@ -823,6 +907,36 @@ export type Database = {
           section_key?: string
           title?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      store_customers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          password_hash: string
+          phone: string | null
+          store_slug: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name?: string
+          password_hash: string
+          phone?: string | null
+          store_slug: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          password_hash?: string
+          phone?: string | null
+          store_slug?: string
         }
         Relationships: []
       }
