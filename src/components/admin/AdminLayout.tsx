@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { path: '/admin/features', icon: Settings, label: 'Features' },
   { path: '/admin/analytics', icon: Activity, label: 'Analytics' },
   { path: '/admin/subscriptions', icon: CreditCard, label: 'Plans' },
+  { path: '/admin/backup', icon: Shield, label: 'Backup' },
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {

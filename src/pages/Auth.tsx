@@ -101,9 +101,9 @@ const Auth = () => {
             animate={{ scale: 1 }}
             className="w-20 h-20 mx-auto rounded-2xl gradient-primary flex items-center justify-center glow-primary"
           >
-            <Car className="w-10 h-10 text-primary-foreground" />
+            <Zap className="w-10 h-10 text-primary-foreground" />
           </motion.div>
-          <h1 className="text-2xl font-bold font-display text-foreground">Welcome</h1>
+          <h1 className="text-2xl font-bold font-display text-foreground">Zen POS</h1>
           <p className="text-sm text-muted-foreground">Smart POS for your business</p>
         </div>
 
