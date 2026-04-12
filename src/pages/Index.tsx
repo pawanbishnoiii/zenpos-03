@@ -152,12 +152,11 @@ const Index = () => {
     });
 
     // Anime.js micro-interactions on buttons
-    anime({
-      targets: '.anime-float',
+    animeAnimate('.anime-float', {
       translateY: [-5, 5],
       duration: 3000,
       direction: 'alternate',
-      easing: 'easeInOutSine',
+      ease: 'inOutSine',
       loop: true,
     });
 
