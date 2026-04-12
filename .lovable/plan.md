@@ -1,201 +1,115 @@
+# Zen POS — Mega Upgrade Plan
 
-
-# Ezo POS — Mega Upgrade Plan
-
-This is a comprehensive upgrade covering every major area of the app. Due to the massive scope, it is organized into **6 phases** to be built sequentially, each delivering working features.
+This is a very large request touching nearly every part of the application. To deliver reliably, I will break it into **single  phases**, each buildable in sequence. Given the scope, I recommend approving and building **one phase at a time** to avoid quality issues.
 
 ---
 
-## Phase 1: Database & Core Infrastructure
+## Phase 1: Branding + Landing Page Upgrade
 
-**Database migrations needed:**
+**Scope:** Rebrand "Ezo" → "Zen POS" everywhere. Upgrade landing page with GSAP, anime.js, scroll animations, tween effects, horizontal scroll section, dynamic pricing plans from DB, and cinematic hero.
 
-1. **Upgrade `business_offers` table** — add `expires_at`, `max_claims`, `per_user_limit`, `claimed_count` columns for coupon system
-2. **Create `expenses` table** — for tracking business expenses (kharche)
-3. **Create `credit_ledger` table** — for udhar/credit tracking per customer
-4. **Add social fields to `businesses`** — `instagram_handle`, `youtube_handle`, `whatsapp_number`, `email`, `pincode`, `google_map_url`
-5. **Add `language` column to `profiles`** — `'en'` or `'hi'` default `'en'`
-6. **Add `last_sign_in_at` to `profiles`** — for admin user tracking
-7. **Create `notifications` table** — `id, business_id, user_id, title, message, type, is_read, created_at`
-8. All tables get proper RLS policies
+- Replace all "Ezo" / "Ezo POS" references with "Zen POS" across codebase (AdminLayout, InvoicePreview, SMTP defaults, etc.)
+- Install `gsap` and `animejs` packages
+- Add GSAP ScrollTrigger animations: fade-in, slide-left/right, parallax, counter animations
+- Add horizontal scroll section showcasing features
+- Add GSAP tween-controlled elastic animations on hero elements
+- Make pricing section dynamic — pull from `subscription_plans` table
+- Add anime.js micro-interactions on buttons and cards
+- Add grid background pattern and aurora glow effects
 
----
+## and AutoService Theme Full Upgrade
 
-## Phase 2: Onboarding & Auth Upgrades
+**Scope:** Transform AutoService theme into a premium, feature-rich storefront.
 
-**Onboarding setup enhancements:**
-- Add steps for: Language selection (Hindi/English), Instagram handle, YouTube handle, WhatsApp number
-- Language choice persists to `profiles.language`
+- Add grid background image + configurable background color
+- Before/After comparison slider with wipe/drag animation (custom component)
+- "Happy Customers" / vehicles served section (team component from 21st.dev pattern) — dynamic via Store Manager
+- Store owner info card with Google Maps embed (dynamic from business settings)
+- Counter animations (500+ Cars Washed, etc.)
+- Water splash and hover micro-animations
+- GSAP scroll-triggered section reveals
+- Services section with vehicle-type filtering (Car/Bike/Truck/Bus)
+- Pricing plans section, booking CTA, WhatsApp integration
+- Membership/offers section
+- About Us section
+- Full cinematic hero with slow-zoom video/gradient background
+- Location + Contact section with embedded Google Map
 
-**Hindi/English i18n system:**
-- Create `src/lib/i18n.ts` with translation map for all UI strings
-- Create `useLanguage()` hook that reads from profile
-- Apply translations across all pages (conditional rendering based on language)
+## and  Store Themes — Review Fix, Customer Auth, Theme Enhancements
 
----
+**Scope:** Fix review system across all themes, add customer signup/login for stores, upgrade theme UIs.
 
-## Phase 3: Store Page & Store Manager Mega Upgrade
+- **Review system fix**: Debug and fix review submission + display across all store themes (currently broken)
+- **Customer auth for stores**: Add signup/login flow on store pages so customers can create accounts and track orders (dynamic toggle from Store Manager)
+- Create `store_customers` table for store-specific customer accounts
+- Add Before/After slider component to Car Wash theme and other relevant themes
+- Upgrade theme UIs with better typography, spacing, glassmorphism, and animations
+- Make themes free/paid toggleable by admin (already have `store_theme_settings` table — wire it up properly)
 
-### StorePage (`/store/:slug`)
+## and  Bill Customization + Billing UI Upgrade
 
-- **Banner slideshow** — auto-rotating owner-uploaded banners from `store_media` with fade/slide animations
-- **Video section** — embedded YouTube or uploaded video with play overlay
-- **Active offers section** — animated cards showing business_offers with coupon codes, expiry, claim count
-- **Full footer** — owner name, email, address, pincode, Google Map embed (iframe), social links (Instagram, YouTube, WhatsApp)
-- **Lottie animations** — 7-8 free Lottie animations (loading, empty state, success, scroll indicators, floating elements)
-- **4 complete store themes** — each is a full landing page design:
-  1. **Starter** — minimal single-column, soft shadows, Inter font
-  2. **Modern** — gradient hero, card grid, Space Grotesk headings, glassmorphism cards
-  3. **Bold** — large typography, full-width sections, vibrant colors, parallax scroll
-  4. **Luxury** — dark background, gold accents, serif headings, elegant animations
-  - Each theme has distinct: fonts, color palette, card styles, button shapes, nav style, footer design, transition patterns
-  - Themes are selectable from Store Manager
+**Scope:** Add bill print customization settings page, fix bill themes, upgrade billing/cart UI.
 
-### StoreManager (`/store-manager`)
+- Add new "Bill Customization" page in Settings with:
+  - Logo upload for bills
+  - Layout selection (A4 / 58mm / 80mm)
+  - Custom header/footer text
+  - Font and style options
+  - Bill template previews
+- Fix bill print themes — ensure dynamic templates actually render correctly
+- Add item card component (21st.dev pattern) to billing product grid and cart
+- Auto-close cart when products reach zero
+- Add product schema additions to DB if needed (e.g., `unit`, `hsn_code`)
 
-Convert into a proper multi-page dashboard with tabs:
-- **Overview** — stats, quick links, live preview button
-- **Appearance** — theme picker with live preview (4 themes), color customization
-- **Media** — drag-and-drop upload, reorder, toggle active/inactive, video URL input
-- **Content** — edit About Us, Services, custom sections with rich text
-- **Products** — toggle visibility, reorder display order
-- **Reviews** — approve/reject with bulk actions
-- **SEO** — title, description, social media links
-- **Offers** — create/manage offers with expiry, max claims, per-user limits
-- **Theme Editor** — visual editor to customize selected theme (colors, fonts, spacing) similar to Wix/Dora/Framer style
+## and  Store Manager + Admin Upgrades
 
----
+**Scope:** Enhance Store Manager with more features, fix and upgrade Admin dashboard.
 
-## Phase 4: Business Features Upgrade
+- **Store Manager upgrades:**
+  - Live preview editor (iframe preview of store while editing)
+  - Section drag-and-drop ordering (using a sortable library)
+  - Custom CSS support field
+  - "Happy Customers" / team management section (search customers, upload images, add to showcase)
+- **Admin dashboard fixes:**
+  - Fix backup page not showing in sidebar (add route to AdminLayout NAV_ITEMS)
+  - Add backup data export/import section
+  - Upgrade gallery — bulk product add
+  - Upgrade subscription plans management (dynamic create/edit/delete with 21st.dev pricing card pattern)
+  - Make theme management fully dynamic (toggle free/paid per theme)
+- **APK/Android settings in Admin:**
+  - APK upload and management section
+  - Push notification settings (stored in DB)
+  - App download link in MotionFooter
 
-### Coupon Code System (Offers Page)
-- Add expiry date picker, max claims limit, per-user limit fields
-- Show claim count, active/expired status badges
-- Validation in billing when applying coupons
+## and  Dashboard Theme Upgrade + Polish
 
-### Customer Management Upgrade
-- Customer profile detail page with purchase history timeline
-- Credit/Udhar ledger — add credit, track payments, show balance
-- Expense tracking per customer
-- Export customer list as CSV
-- Bulk SMS/WhatsApp message (UI ready)
-- Customer tags/categories
-- Birthday/anniversary reminders section
+**Scope:** Upgrade dashboard UI, add Lottie animations, final polish.
 
-### Bill History Upgrade
-- Date range filter (from-to calendar picker)
-- Payment method filter
-- Export invoices as CSV/PDF
-- Daily/weekly/monthly summary cards
-- Charts showing revenue trends
-
-### Expense & Udhar Tracking (New)
-- Expense categories (rent, salary, supplies, etc.)
-- Add/edit/delete expenses with date, amount, category, notes
-- Credit ledger: add udhar per customer, record payments, show outstanding balance
-- Dashboard widget showing total expenses and outstanding credit
-
-### Notifications System
-- In-app notification bell with badge count
-- Notification types: low stock, new review, payment received, offer expiring
-- Mark as read, clear all
-- Admin can broadcast notifications to all users
+- Upgrade Dashboard page with better charts, stats, and animations
+- Add Lottie animations for loading states, empty states, success feedback
+- Add smooth page transitions throughout the app
+- Final branding pass — ensure "Zen POS" appears consistently
+- Responsive QA across all pages
 
 ---
 
-## Phase 5: Admin Dashboard Overhaul
+## Technical Details
 
-### Layout Fix
-- Sidebar navigation (already exists via AdminLayout) — fix buttons to be sidebar items, not top tabs
-- Add sub-menu items under major sections (e.g., Users > All Users, Users > Roles)
-- Proper routing: `/admin`, `/admin/gallery`, `/admin/users`, `/admin/stores`, etc.
+**New packages:** `gsap`, `animejs` (or `@anime-inc/animejs`), a before/after slider lib (or custom), `@dnd-kit/core` for drag-and-drop
 
-### Admin Pages
-- **Overview** — charts (revenue, signups, active users), animated stat cards
-- **Gallery** — seed 100+ products via schema, bulk add, category filter, image upload
-- **Users** — show last login time, role, business count, created date; search/filter
-- **Stores** — all businesses with category filter, feature toggle, store preview link
-- **SMTP** — keep Lovable Cloud auth (Google/Apple) option, allow custom SMTP config alongside, test email button
-- **Email Alerts** — configure alert templates, send test emails via both Lovable and custom SMTP
-- **Features** — category feature matrix toggle
-- **Analytics** — revenue charts, user growth, store activity
-- **Plans/Subscriptions** — manage Free/Pro/Enterprise tiers
+**Database changes:**
 
-### Admin Gallery Seeding
-- Insert 100+ products across all 13 categories using the database insert tool
+- New table: `store_customers` (id, store_slug, email, password_hash, name, phone, created_at) — for customer-facing auth on stores
+- New table: `happy_customers` (id, business_id, customer_name, image_url, vehicle_info, title, sort_order) — for the showcase section
+- New table: `admin_apk_settings` (id, apk_url, version, push_notification_key, updated_at)
+- Add columns to `printer_settings`: `logo_url`, `layout_type`, `custom_header`, `custom_footer`, `font_size`
+- Add columns to `businesses`: `tagline`, `owner_card_visible`, `customer_auth_enabled`
+- Migration to add `backup` route to admin nav (code-only, no DB)
+
+**Key files modified:** ~25+ files across themes, pages, components, and settings.
 
 ---
 
-## Phase 6: UI/UX & Branding Polish
+## Recommendation
 
-### Branding
-- App name "Ezo" throughout — Ezo POS (billing), Ezo Admin (admin panel)
-- Update logo, favicon, meta tags
-- Receipt/invoice footer: "Powered by Ezo"
-- Primary color update to match Ezo brand
-
-### Lottie Animations (7-8 mandatory)
-1. Page loading spinner
-2. Empty state (no products, no invoices)
-3. Success (payment complete, save success)
-4. Onboarding welcome
-5. Store page scroll decoration
-6. Dashboard stat card hover
-7. Notification bell ring
-8. Confetti on first sale
-
-### Responsive Polish
-- All pages fully responsive (mobile bottom nav, desktop sidebar)
-- Store page themes responsive down to 320px
-- Admin dashboard responsive with collapsible sidebar
-
-### Additional Creativity
-- Dark/light mode toggle in settings
-- Quick action floating button on dashboard
-- WhatsApp share button on invoices
-- QR code generator for store link
-- Animated page transitions between routes
-- Skeleton loading states on all data-heavy pages
-- Pull-to-refresh on mobile lists
-
----
-
-## Technical Approach
-
-### Files to Create (~15 new files)
-- `src/lib/i18n.ts` — Hindi/English translations
-- `src/hooks/useLanguage.tsx` — language hook
-- `src/hooks/useNotifications.tsx` — notification system hook
-- `src/components/store/themes/StarterTheme.tsx`
-- `src/components/store/themes/ModernTheme.tsx`
-- `src/components/store/themes/BoldTheme.tsx`
-- `src/components/store/themes/LuxuryTheme.tsx`
-- `src/components/store/ThemeEditor.tsx`
-- `src/components/store/StoreFooter.tsx`
-- `src/components/common/LottieAnimation.tsx`
-- `src/pages/ExpenseTracker.tsx`
-- `src/pages/CreditLedger.tsx`
-- `src/components/notifications/NotificationBell.tsx`
-- `src/components/billing/CouponApply.tsx`
-
-### Files to Modify (~20 files)
-- All page files (Dashboard, Billing, BillHistory, CustomerManagement, OffersPage, etc.)
-- App.tsx (new routes)
-- AdminDashboard.tsx (sidebar sub-nav, new tabs)
-- Onboarding.tsx (new steps)
-- StorePage.tsx (themes, footer, slideshow, offers, videos)
-- StoreManager.tsx (theme editor, more tabs)
-- SettingsPage.tsx (language toggle)
-
-### Database Migrations (6 migrations)
-1. Alter `business_offers` — add expiry/claim columns
-2. Create `expenses` table
-3. Create `credit_ledger` table
-4. Alter `businesses` — add social/location fields
-5. Alter `profiles` — add language, last_sign_in_at
-6. Create `notifications` table
-
-### Dependencies to Add
-- `lottie-react` — for Lottie animations
-- `react-beautiful-dnd` or `@dnd-kit/core` — for drag-and-drop in store manager
-
+This is equivalent to **weeks of development work**. I strongly recommend approving **Phase 1 first**, then proceeding phase by phase. Each phase is self-contained and testable. Shall I proceed with Phase 1?
