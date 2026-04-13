@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
-import { ShoppingBag, Star, MapPin, Phone, Wrench, Car, Shield, Zap, Clock, Award, ChevronRight, MessageCircle, Bike, Bus, Truck, Droplets, Sparkles, Eye, Users, CheckCircle, Play } from 'lucide-react';
+import { ShoppingBag, Star, MapPin, Phone, Wrench, Car, Shield, Zap, Clock, Award, ChevronRight, MessageCircle, Bike, Bus, Truck, Droplets, Sparkles, Eye, Users, CheckCircle, Play, Calendar, Send, Check } from 'lucide-react';
 import BannerSlideshow from '../BannerSlideshow';
 import OffersSection from '../OffersSection';
 import VideoSection from '../VideoSection';
@@ -27,7 +27,15 @@ const VEHICLE_TYPES = [
   { id: 'bus', label: 'Bus', icon: Bus, color: 'from-emerald-500 to-teal-500' },
 ];
 
-// Animated counter component
+const SERVICES_LIST = [
+  { name: 'Exterior Wash', desc: 'Full pressure wash', icon: Droplets, price: '₹249' },
+  { name: 'Interior Clean', desc: 'Vacuum & dashboard', icon: Sparkles, price: '₹349' },
+  { name: 'Foam Wash', desc: 'Premium snow foam', icon: Zap, price: '₹449' },
+  { name: 'Ceramic Coating', desc: 'Long-lasting shine', icon: Shield, price: '₹1299' },
+  { name: 'Engine Bay', desc: 'Engine detailing', icon: Wrench, price: '₹599' },
+  { name: 'Full Detail', desc: 'Complete care package', icon: Award, price: '₹1999' },
+];
+
 const AnimatedCounter = ({ target, suffix = '' }: { target: number; suffix?: string }) => {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -58,6 +66,10 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewProduct, setReviewProduct] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingTime, setBookingTime] = useState('');
+  const [bookingService, setBookingService] = useState('');
+  const [activeServiceFilter, setActiveServiceFilter] = useState('all');
 
   const theme = {
     footerBg: 'bg-slate-900', footerText: 'text-slate-400', emoji: '🚗',
@@ -91,6 +103,11 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
     setSubmittingReview(false);
   };
 
+  const handleWhatsAppBooking = () => {
+    const msg = `🔧 *Service Booking Request*%0A%0A📅 Date: ${bookingDate}%0A⏰ Time: ${bookingTime}%0A🚗 Service: ${bookingService || 'General Service'}%0A🏪 Store: ${business.business_name}`;
+    window.open(`https://wa.me/${business.whatsapp_number || business.phone}?text=${msg}`, '_blank');
+  };
+
   const trustBadges = [
     { icon: Shield, label: 'Trusted Service', value: '100%' },
     { icon: Award, label: 'Happy Customers', value: `${Math.max(reviews.length * 10, 100)}+` },
@@ -99,13 +116,19 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
   ];
 
   const counterStats = [
-    { target: Math.max(reviews.length * 50, 500), suffix: '+', label: 'Cars Washed' },
+    { target: Math.max(reviews.length * 50, 500), suffix: '+', label: 'Cars Serviced' },
     { target: Math.max(reviews.length * 10, 100), suffix: '+', label: 'Happy Clients' },
     { target: 5, suffix: '★', label: 'Avg Rating' },
     { target: 3, suffix: '+', label: 'Years Exp' },
   ];
 
   const currentVehicle = VEHICLE_TYPES.find(v => v.id === selectedVehicle) || VEHICLE_TYPES[0];
+
+  const filteredProducts = activeServiceFilter === 'all'
+    ? products
+    : products.filter(p => p.category?.toLowerCase() === activeServiceFilter);
+
+  const productCategories = ['all', ...new Set(products.map(p => p.category?.toLowerCase()).filter(Boolean))];
 
   return (
     <div className="min-h-screen bg-slate-950" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -143,6 +166,7 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
             <a href="#services" className="hover:text-cyan-400 transition-colors">Services</a>
             <a href="#gallery" className="hover:text-cyan-400 transition-colors">Gallery</a>
             <a href="#products" className="hover:text-cyan-400 transition-colors">Parts</a>
+            <a href="#booking" className="hover:text-cyan-400 transition-colors">Book</a>
             <a href="#reviews" className="hover:text-cyan-400 transition-colors">Reviews</a>
             <a href="#contact" className="hover:text-cyan-400 transition-colors">Contact</a>
           </div>
@@ -168,9 +192,6 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
         <div className="absolute inset-0 opacity-5" style={{
           backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%2300bcd4\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
         }} />
-        <motion.div className="absolute bottom-0 left-0 right-0 h-32 opacity-10"
-          animate={{ y: [0, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          style={{ background: 'radial-gradient(ellipse at center, rgba(0,188,212,0.3) 0%, transparent 70%)' }} />
 
         <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-28">
           <div className="flex flex-col md:flex-row items-center gap-10">
@@ -209,15 +230,12 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
                 <a href="#products" className={`px-8 py-3.5 rounded-2xl bg-gradient-to-r ${currentVehicle.color} text-white text-sm font-bold hover:opacity-90 transition-all shadow-lg flex items-center gap-2`}>
                   <ShoppingBag className="w-4 h-4" /> View Services
                 </a>
-                {business.phone && (
-                  <a href={`tel:${business.phone}`} className="px-6 py-3.5 rounded-2xl border-2 border-slate-600 text-white text-sm font-bold hover:bg-white/5 transition-all flex items-center gap-2">
-                    <Phone className="w-4 h-4" /> Book Now
-                  </a>
-                )}
+                <a href="#booking" className="px-6 py-3.5 rounded-2xl border-2 border-slate-600 text-white text-sm font-bold hover:bg-white/5 transition-all flex items-center gap-2">
+                  <Calendar className="w-4 h-4" /> Book Now
+                </a>
               </motion.div>
             </div>
 
-            {/* Hero Visual */}
             <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
               className="relative">
               {business.logo_url ? (
@@ -239,7 +257,7 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {counterStats.map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 * i }}
-              whileHover={{ y: -3, transition: { duration: 0.2 } }}
+              whileHover={{ y: -3 }}
               className="rounded-2xl bg-slate-800/80 backdrop-blur-sm shadow-lg border border-slate-700/50 p-4 text-center">
               <p className="text-2xl md:text-3xl font-black text-cyan-400">
                 <AnimatedCounter target={stat.target} suffix={stat.suffix} />
@@ -270,6 +288,32 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
         </div>
       )}
 
+      {/* Services Section */}
+      <section id="services" className="max-w-7xl mx-auto px-4 py-16 space-y-8">
+        <div className="text-center space-y-2">
+          <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest">Our Services</p>
+          <h2 className="text-3xl md:text-4xl font-black text-white">What We Do Best</h2>
+          <p className="text-sm text-slate-400">Professional auto care for every vehicle type</p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {SERVICES_LIST.map((svc, i) => {
+            const SvcIcon = svc.icon;
+            return (
+              <motion.div key={svc.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }} whileHover={{ y: -4, scale: 1.02 }}
+                className="rounded-2xl bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 p-5 text-center space-y-3 group hover:border-cyan-500/30 transition-all">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <SvcIcon className="w-7 h-7 text-cyan-400" />
+                </div>
+                <h3 className="text-sm font-bold text-white">{svc.name}</h3>
+                <p className="text-[10px] text-slate-400">{svc.desc}</p>
+                <p className="text-lg font-black text-cyan-400">{svc.price}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Before/After Section */}
       <section id="gallery" className="max-w-7xl mx-auto px-4 py-16 space-y-8">
         <div className="text-center space-y-2">
@@ -292,6 +336,32 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
 
       {/* Happy Customers */}
       <HappyCustomersSection customers={happyCustomers} />
+
+      {/* WhatsApp Booking */}
+      <section id="booking" className="max-w-7xl mx-auto px-4 py-16">
+        <div className="text-center space-y-2 mb-8">
+          <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest">Book Online</p>
+          <h2 className="text-3xl font-black text-white">Schedule Your Service</h2>
+          <p className="text-sm text-slate-400">Select your preferred time and we'll confirm via WhatsApp</p>
+        </div>
+        <div className="max-w-md mx-auto rounded-3xl bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 p-6 space-y-4">
+          <select value={bookingService} onChange={e => setBookingService(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30">
+            <option value="">Select a service</option>
+            {SERVICES_LIST.map(s => <option key={s.name} value={s.name}>{s.name} - {s.price}</option>)}
+          </select>
+          <div className="grid grid-cols-2 gap-3">
+            <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)}
+              className="px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30" />
+            <input type="time" value={bookingTime} onChange={e => setBookingTime(e.target.value)}
+              className="px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30" />
+          </div>
+          <button onClick={handleWhatsAppBooking} disabled={!bookingDate || !bookingTime}
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-bold disabled:opacity-50 hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+            <MessageCircle className="w-4 h-4" /> Book via WhatsApp
+          </button>
+        </div>
+      </section>
 
       {/* About / Owner Card */}
       {(business.owner_card_visible !== false) && (
@@ -351,10 +421,18 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
         <div className="text-center space-y-2">
           <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest">Our Services & Parts</p>
           <h2 className="text-3xl md:text-4xl font-black text-white">What We Offer</h2>
-          <p className="text-sm text-slate-400">Select your vehicle type above for tailored pricing</p>
+        </div>
+        {/* Category filter */}
+        <div className="flex gap-2 justify-center flex-wrap">
+          {productCategories.map(cat => (
+            <button key={cat} onClick={() => setActiveServiceFilter(cat)}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${activeServiceFilter === cat ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+              {cat === 'all' ? 'All' : cat}
+            </button>
+          ))}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map((p, i) => {
+          {filteredProducts.map((p, i) => {
             const img = getImageSrc(p.image_url || '');
             const hasDiscount = p.discount_price < p.price;
             return (
