@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Users, Store, Package, Receipt, Shield, Plus, Loader2, Trash2, ImagePlus, Pencil, Tag, BarChart3, Settings, Globe, Database, Eye, EyeOff, Search, Mail, Bell, Server, Send, Activity, CheckCircle, XCircle, Save, Clock, CreditCard, Palette } from 'lucide-react';
+import { Users, Store, Package, Receipt, Shield, Plus, Loader2, Trash2, ImagePlus, Pencil, Tag, BarChart3, Settings, Globe, Database, Eye, EyeOff, Search, Mail, Bell, Server, Send, Activity, CheckCircle, XCircle, Save, Clock, CreditCard, Palette, Upload, Download, Smartphone } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +23,7 @@ const STORE_THEMES_INFO: Record<string, { label: string; emoji: string; desc: st
   bookshop: { label: 'Bookshop', emoji: '📚', desc: 'Warm bookshop' },
 };
 
-type AdminTab = 'overview' | 'gallery' | 'users' | 'businesses' | 'features' | 'smtp' | 'notifications' | 'analytics' | 'subscriptions' | 'themes' | 'backup';
+type AdminTab = 'overview' | 'gallery' | 'users' | 'businesses' | 'features' | 'smtp' | 'notifications' | 'analytics' | 'subscriptions' | 'themes' | 'backup' | 'apps';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
@@ -49,11 +49,20 @@ const AdminDashboard = () => {
   const [savingSmtp, setSavingSmtp] = useState(false);
   const [smtpId, setSmtpId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
-  // Theme management
   const [themeSettings, setThemeSettings] = useState<any[]>([]);
   const [savingThemes, setSavingThemes] = useState(false);
-  // Subscription plans
   const [plans, setPlans] = useState<any[]>([]);
+  const [showPlanForm, setShowPlanForm] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<any>(null);
+  const [planForm, setPlanForm] = useState({ name: '', price: '0', interval: 'month', features: '', sort_order: '0' });
+  const [savingPlan, setSavingPlan] = useState(false);
+  // APK settings
+  const [apkSettings, setApkSettings] = useState<any>(null);
+  const [apkFile, setApkFile] = useState<File | null>(null);
+  const [savingApk, setSavingApk] = useState(false);
+  const [apkForm, setApkForm] = useState({ version: '1.0.0', push_notification_key: '' });
+  // Backup import
+  const [importing, setImporting] = useState(false);
 
   const getTabFromPath = (path: string): AdminTab => {
     if (path.includes('/admin/gallery')) return 'gallery';
@@ -66,6 +75,7 @@ const AdminDashboard = () => {
     if (path.includes('/admin/subscriptions')) return 'subscriptions';
     if (path.includes('/admin/themes')) return 'themes';
     if (path.includes('/admin/backup')) return 'backup';
+    if (path.includes('/admin/apps')) return 'apps';
     return 'overview';
   };
 
@@ -76,7 +86,7 @@ const AdminDashboard = () => {
       overview: '/admin', gallery: '/admin/gallery', businesses: '/admin/stores',
       users: '/admin/users', smtp: '/admin/smtp', notifications: '/admin/alerts',
       features: '/admin/features', analytics: '/admin/analytics', subscriptions: '/admin/subscriptions',
-      themes: '/admin/themes', backup: '/admin/backup',
+      themes: '/admin/themes', backup: '/admin/backup', apps: '/admin/apps',
     };
     navigate(pathMap[tabId] || '/admin');
   };
@@ -108,6 +118,7 @@ const AdminDashboard = () => {
     fetchNotifications();
     fetchThemeSettings();
     fetchPlans();
+    fetchApkSettings();
   }, []);
 
   const fetchGallery = async () => {
@@ -136,6 +147,14 @@ const AdminDashboard = () => {
   const fetchPlans = async () => {
     const { data } = await supabase.from('subscription_plans').select('*').order('sort_order');
     setPlans(data || []);
+  };
+
+  const fetchApkSettings = async () => {
+    const { data } = await supabase.from('admin_apk_settings').select('*').limit(1).maybeSingle();
+    if (data) {
+      setApkSettings(data);
+      setApkForm({ version: data.version || '1.0.0', push_notification_key: data.push_notification_key || '' });
+    }
   };
 
   const handleSaveSmtp = async () => {
@@ -213,11 +232,106 @@ const AdminDashboard = () => {
     return supabase.storage.from('product-images').getPublicUrl(url).data.publicUrl;
   };
 
-  // Theme management handlers
   const handleToggleTheme = async (id: string, field: 'is_active' | 'is_pro_only', current: boolean) => {
     await supabase.from('store_theme_settings').update({ [field]: !current }).eq('id', id);
     setThemeSettings(prev => prev.map(t => t.id === id ? { ...t, [field]: !current } : t));
     toast({ title: 'Theme updated!' });
+  };
+
+  // Plan CRUD
+  const handleSavePlan = async () => {
+    setSavingPlan(true);
+    const features = planForm.features.split('\n').map(f => f.trim()).filter(Boolean);
+    const payload = { name: planForm.name, price: parseFloat(planForm.price) || 0, interval: planForm.interval, features: features as any, sort_order: parseInt(planForm.sort_order) || 0, is_active: true };
+    let error;
+    if (editingPlan) {
+      ({ error } = await supabase.from('subscription_plans').update(payload).eq('id', editingPlan.id));
+    } else {
+      ({ error } = await supabase.from('subscription_plans').insert(payload));
+    }
+    if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    else { toast({ title: editingPlan ? 'Plan updated!' : 'Plan created!' }); setShowPlanForm(false); setEditingPlan(null); fetchPlans(); }
+    setSavingPlan(false);
+  };
+
+  const deletePlan = async (id: string) => {
+    await supabase.from('subscription_plans').delete().eq('id', id);
+    toast({ title: 'Plan deleted' }); fetchPlans();
+  };
+
+  const openEditPlan = (plan: any) => {
+    setEditingPlan(plan);
+    const features = Array.isArray(plan.features) ? plan.features.join('\n') : '';
+    setPlanForm({ name: plan.name, price: String(plan.price), interval: plan.interval, features, sort_order: String(plan.sort_order) });
+    setShowPlanForm(true);
+  };
+
+  // APK upload
+  const handleSaveApk = async () => {
+    setSavingApk(true);
+    let apkUrl = apkSettings?.apk_url || '';
+    if (apkFile) {
+      const path = `apk/zenpos-${apkForm.version}.apk`;
+      const { error } = await supabase.storage.from('store-media').upload(path, apkFile, { cacheControl: '3600', upsert: true });
+      if (!error) apkUrl = supabase.storage.from('store-media').getPublicUrl(path).data.publicUrl;
+    }
+    const payload = { apk_url: apkUrl, version: apkForm.version, push_notification_key: apkForm.push_notification_key, updated_at: new Date().toISOString() };
+    let error;
+    if (apkSettings?.id) {
+      ({ error } = await supabase.from('admin_apk_settings').update(payload).eq('id', apkSettings.id));
+    } else {
+      const res = await supabase.from('admin_apk_settings').insert(payload).select().single();
+      error = res.error;
+      if (res.data) setApkSettings(res.data);
+    }
+    if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    else { toast({ title: 'APK settings saved!' }); fetchApkSettings(); }
+    setSavingApk(false);
+  };
+
+  // Platform import
+  const handlePlatformImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+      let count = 0;
+      if (backup.data?.products?.length) {
+        for (const p of backup.data.products) {
+          const { id, created_at, updated_at, ...rest } = p;
+          const { error } = await supabase.from('products').upsert({ ...rest, id }, { onConflict: 'id' });
+          if (!error) count++;
+        }
+      }
+      if (backup.data?.customers?.length) {
+        for (const c of backup.data.customers) {
+          const { id, created_at, updated_at, ...rest } = c;
+          await supabase.from('customers').upsert({ ...rest, id }, { onConflict: 'id' });
+          count++;
+        }
+      }
+      if (backup.data?.invoices?.length) {
+        for (const inv of backup.data.invoices) {
+          const { id, created_at, ...rest } = inv;
+          await supabase.from('invoices').upsert({ ...rest, id }, { onConflict: 'id' });
+          count++;
+        }
+      }
+      if (backup.data?.expenses?.length) {
+        for (const exp of backup.data.expenses) {
+          const { id, created_at, updated_at, ...rest } = exp;
+          await supabase.from('expenses').upsert({ ...rest, id }, { onConflict: 'id' });
+          count++;
+        }
+      }
+      toast({ title: 'Import complete!', description: `${count} records restored.` });
+    } catch (err: any) {
+      toast({ title: 'Import failed', description: err.message, variant: 'destructive' });
+    }
+    setImporting(false);
+    e.target.value = '';
   };
 
   const galleryCats = ['All', ...new Set(galleryItems.map(g => g.category))];
@@ -413,7 +527,6 @@ const AdminDashboard = () => {
             <div className="text-center py-12 rounded-2xl glass-card">
               <Users className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
               <p className="text-sm font-semibold text-foreground">No users found</p>
-              <p className="text-xs text-muted-foreground mt-1">Users will appear here after they sign up.</p>
             </div>
           ) : filteredProfiles.map(p => {
             const userBiz = allBusinesses.filter(b => b.owner_id === p.id);
@@ -430,7 +543,6 @@ const AdminDashboard = () => {
                 <div className="text-right shrink-0">
                   <p className="text-[10px] text-muted-foreground">Joined</p>
                   <p className="text-xs font-medium text-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString() : '--'}</p>
-                  {(p as any).last_sign_in_at && <p className="text-[10px] text-muted-foreground mt-0.5">Last: {new Date((p as any).last_sign_in_at).toLocaleDateString()}</p>}
                 </div>
               </div>
             );
@@ -438,7 +550,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Theme Management - Upgraded */}
+      {/* Theme Management */}
       {activeTab === 'themes' && (
         <div className="space-y-4">
           <div className="rounded-2xl glass-card shadow-soft p-5">
@@ -449,20 +561,6 @@ const AdminDashboard = () => {
                 <p className="text-xs text-muted-foreground">Control which themes are available and which are Pro-only</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 mt-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/5 border border-success/20">
-                <Eye className="w-3 h-3 text-success" />
-                <span className="text-xs font-medium text-foreground">{themeSettings.filter(t => t.is_active).length} Active</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-warning/5 border border-warning/20">
-                <CreditCard className="w-3 h-3 text-warning" />
-                <span className="text-xs font-medium text-foreground">{themeSettings.filter(t => t.is_pro_only).length} Pro Only</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-destructive/5 border border-destructive/20">
-                <EyeOff className="w-3 h-3 text-destructive" />
-                <span className="text-xs font-medium text-foreground">{themeSettings.filter(t => !t.is_active).length} Hidden</span>
-              </div>
-            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {themeSettings.map((ts, idx) => {
@@ -470,30 +568,22 @@ const AdminDashboard = () => {
               const storesUsing = allBusinesses.filter(b => b.store_theme === ts.theme_key);
               return (
                 <motion.div key={ts.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
-                  className={`rounded-2xl glass-card shadow-soft overflow-hidden border-2 transition-all hover:shadow-elevated ${ts.is_active ? 'border-success/30' : 'border-destructive/30 opacity-70'}`}>
-                  {/* Theme preview header */}
+                  className={`rounded-2xl glass-card shadow-soft overflow-hidden border-2 transition-all ${ts.is_active ? 'border-success/30' : 'border-destructive/30 opacity-70'}`}>
                   <div className="h-20 bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 flex items-center justify-center relative">
                     <span className="text-4xl">{info.emoji}</span>
-                    {ts.is_pro_only && (
-                      <span className="absolute top-2 right-2 text-[9px] px-2 py-0.5 rounded-full bg-warning/20 text-warning font-bold border border-warning/30">PRO</span>
-                    )}
-                    {storesUsing.length > 0 && (
-                      <span className="absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded-full bg-primary/20 text-primary font-bold">{storesUsing.length} store{storesUsing.length > 1 ? 's' : ''}</span>
-                    )}
+                    {ts.is_pro_only && <span className="absolute top-2 right-2 text-[9px] px-2 py-0.5 rounded-full bg-warning/20 text-warning font-bold border border-warning/30">PRO</span>}
+                    {storesUsing.length > 0 && <span className="absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded-full bg-primary/20 text-primary font-bold">{storesUsing.length} store{storesUsing.length > 1 ? 's' : ''}</span>}
                   </div>
                   <div className="p-4 space-y-3">
-                    <div>
-                      <p className="text-sm font-bold text-foreground">{info.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{info.desc}</p>
-                    </div>
+                    <div><p className="text-sm font-bold text-foreground">{info.label}</p><p className="text-xs text-muted-foreground mt-0.5">{info.desc}</p></div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleToggleTheme(ts.id, 'is_active', ts.is_active)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${ts.is_active ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-destructive/10 text-destructive hover:bg-destructive/20'}`}>
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${ts.is_active ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
                         {ts.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                         {ts.is_active ? 'Active' : 'Hidden'}
                       </button>
                       <button onClick={() => handleToggleTheme(ts.id, 'is_pro_only', ts.is_pro_only)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${ts.is_pro_only ? 'bg-warning/10 text-warning hover:bg-warning/20' : 'bg-secondary text-secondary-foreground hover:bg-muted'}`}>
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${ts.is_pro_only ? 'bg-warning/10 text-warning' : 'bg-secondary text-secondary-foreground'}`}>
                         <CreditCard className="w-3.5 h-3.5" />
                         {ts.is_pro_only ? 'Pro Only' : 'Free'}
                       </button>
@@ -506,7 +596,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* SMTP / Auth Settings */}
+      {/* SMTP */}
       {activeTab === 'smtp' && (
         <div className="space-y-4">
           <div className="rounded-2xl glass-card shadow-soft p-5 space-y-3">
@@ -514,18 +604,7 @@ const AdminDashboard = () => {
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><Shield className="w-6 h-6 text-primary" /></div>
               <div><h3 className="text-sm font-bold text-foreground">Authentication Settings</h3><p className="text-xs text-muted-foreground">Lovable Cloud manages Google & Apple sign-in automatically</p></div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="rounded-xl bg-success/5 border border-success/20 p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center"><CheckCircle className="w-5 h-5 text-success" /></div>
-                <div><p className="text-sm font-semibold text-foreground">Google Sign-In</p><p className="text-xs text-muted-foreground">Managed by Lovable Cloud</p></div>
-              </div>
-              <div className="rounded-xl bg-success/5 border border-success/20 p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center"><CheckCircle className="w-5 h-5 text-success" /></div>
-                <div><p className="text-sm font-semibold text-foreground">Apple Sign-In</p><p className="text-xs text-muted-foreground">Managed by Lovable Cloud</p></div>
-              </div>
-            </div>
           </div>
-
           <div className="rounded-2xl glass-card shadow-soft p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><Server className="w-6 h-6 text-primary" /></div>
@@ -541,51 +620,33 @@ const AdminDashboard = () => {
                     className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
               </div>
               <div><label className="text-xs font-medium text-muted-foreground mb-1 block">Username</label>
-                <input type="text" placeholder="your@email.com" value={smtpConfig.username} onChange={e => setSmtpConfig(f => ({ ...f, username: e.target.value }))}
+                <input type="text" value={smtpConfig.username} onChange={e => setSmtpConfig(f => ({ ...f, username: e.target.value }))}
                   className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
               <div><label className="text-xs font-medium text-muted-foreground mb-1 block">Password</label>
-                <input type="password" placeholder="••••••••" value={smtpConfig.password} onChange={e => setSmtpConfig(f => ({ ...f, password: e.target.value }))}
-                  className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs font-medium text-muted-foreground mb-1 block">Encryption</label>
-                  <select value={smtpConfig.encryption} onChange={e => setSmtpConfig(f => ({ ...f, encryption: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
-                    <option value="tls">TLS</option><option value="ssl">SSL</option><option value="none">None</option>
-                  </select></div>
-                <div><label className="text-xs font-medium text-muted-foreground mb-1 block">From Name</label>
-                  <input type="text" placeholder="Zen POS" value={smtpConfig.from_name} onChange={e => setSmtpConfig(f => ({ ...f, from_name: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
-              </div>
-              <div><label className="text-xs font-medium text-muted-foreground mb-1 block">From Email</label>
-                <input type="email" placeholder="noreply@yourdomain.com" value={smtpConfig.from_email} onChange={e => setSmtpConfig(f => ({ ...f, from_email: e.target.value }))}
+                <input type="password" value={smtpConfig.password} onChange={e => setSmtpConfig(f => ({ ...f, password: e.target.value }))}
                   className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
               <div className="flex items-center justify-between p-3 rounded-xl bg-secondary">
-                <div><p className="text-sm font-semibold text-foreground">Enable SMTP</p></div>
+                <p className="text-sm font-semibold text-foreground">Enable SMTP</p>
                 <button onClick={() => setSmtpConfig(f => ({ ...f, is_active: !f.is_active }))}
                   className={`w-12 h-7 rounded-full relative transition-colors ${smtpConfig.is_active ? 'bg-success' : 'bg-muted'}`}>
                   <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${smtpConfig.is_active ? 'right-0.5' : 'left-0.5'}`} />
                 </button>
               </div>
-              <motion.button whileTap={{ scale: 0.97 }} onClick={handleSaveSmtp} disabled={savingSmtp}
-                className="w-full py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+              <button onClick={handleSaveSmtp} disabled={savingSmtp}
+                className="px-6 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 disabled:opacity-50">
                 {savingSmtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save SMTP
-              </motion.button>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Notifications / Alerts */}
+      {/* Notifications */}
       {activeTab === 'notifications' && (
-        <div className="space-y-4">
-          <div className="rounded-2xl glass-card shadow-soft p-4">
-            <h3 className="text-sm font-bold text-foreground">Email Notifications Log</h3>
-            <p className="text-xs text-muted-foreground">{notifications.length} notifications</p>
-          </div>
-          {notifications.length === 0 ? (
-            <div className="text-center py-8 rounded-2xl glass-card"><Bell className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" /><p className="text-sm text-muted-foreground">No notifications yet.</p></div>
-          ) : notifications.map(n => (
-            <div key={n.id} className="rounded-2xl glass-card shadow-soft p-4 flex items-center gap-3">
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase">Email Log ({notifications.length})</p>
+          {notifications.map(n => (
+            <div key={n.id} className="rounded-2xl glass-card shadow-soft p-3 flex items-center gap-3">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${n.status === 'sent' ? 'bg-success/10' : n.status === 'failed' ? 'bg-destructive/10' : 'bg-warning/10'}`}>
                 {n.status === 'sent' ? <CheckCircle className="w-4 h-4 text-success" /> : n.status === 'failed' ? <XCircle className="w-4 h-4 text-destructive" /> : <Clock className="w-4 h-4 text-warning" />}
               </div>
@@ -593,7 +654,6 @@ const AdminDashboard = () => {
                 <p className="text-sm font-medium text-foreground truncate">{n.subject}</p>
                 <p className="text-xs text-muted-foreground">{n.recipient_email} • {new Date(n.created_at).toLocaleString()}</p>
               </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${n.status === 'sent' ? 'bg-success/10 text-success' : n.status === 'failed' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'}`}>{n.status}</span>
             </div>
           ))}
         </div>
@@ -626,10 +686,6 @@ const AdminDashboard = () => {
       {/* Features */}
       {activeTab === 'features' && (
         <div className="space-y-4">
-          <div className="rounded-2xl glass-card shadow-soft p-4">
-            <h3 className="text-sm font-semibold text-foreground">Category Feature Matrix</h3>
-            <p className="text-xs text-muted-foreground">Features available per business type</p>
-          </div>
           {Object.entries(CATEGORY_CONFIGS).map(([key, config]) => {
             const CatIcon = config.icon;
             return (
@@ -649,20 +705,26 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Subscriptions / Plans */}
+      {/* Subscriptions / Plans - Dynamic CRUD */}
       {activeTab === 'subscriptions' && (
         <div className="space-y-4">
-          <div className="rounded-2xl glass-card shadow-soft p-5">
-            <h3 className="text-sm font-bold text-foreground">Subscription Plans</h3>
-            <p className="text-xs text-muted-foreground mt-1">Free and Pro tiers for store owners</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Subscription Plans</h3>
+              <p className="text-xs text-muted-foreground">{plans.length} plans configured</p>
+            </div>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setEditingPlan(null); setPlanForm({ name: '', price: '0', interval: 'month', features: '', sort_order: String(plans.length) }); setShowPlanForm(true); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl gradient-primary text-primary-foreground text-xs font-semibold">
+              <Plus className="w-3.5 h-3.5" /> Add Plan
+            </motion.button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {plans.map(plan => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {plans.map((plan, i) => {
               const features = Array.isArray(plan.features) ? plan.features : [];
-              const isPro = plan.name === 'Pro';
+              const isPopular = i === 1 && plans.length > 1;
               return (
-                <div key={plan.id} className={`rounded-2xl glass-card shadow-soft p-5 border-2 space-y-3 ${isPro ? 'border-primary' : 'border-border'}`}>
-                  {isPro && <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">POPULAR</span>}
+                <div key={plan.id} className={`rounded-2xl glass-card shadow-soft p-5 border-2 space-y-3 ${isPopular ? 'border-primary' : 'border-border'}`}>
+                  {isPopular && <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">POPULAR</span>}
                   <h4 className="text-lg font-bold text-foreground">{plan.name}</h4>
                   <p className="text-2xl font-bold text-primary">₹{plan.price}<span className="text-sm text-muted-foreground font-normal">/{plan.interval}</span></p>
                   <ul className="space-y-1.5">
@@ -670,22 +732,53 @@ const AdminDashboard = () => {
                       <li key={f} className="text-xs text-muted-foreground flex items-center gap-1.5"><CheckCircle className="w-3 h-3 text-success shrink-0" /> {f}</li>
                     ))}
                   </ul>
+                  <div className="flex gap-2 pt-2">
+                    <button onClick={() => openEditPlan(plan)} className="flex-1 px-3 py-1.5 rounded-xl bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-muted">Edit</button>
+                    <button onClick={() => deletePlan(plan.id)} className="px-3 py-1.5 rounded-xl bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20">Delete</button>
+                  </div>
                 </div>
               );
             })}
           </div>
-          
-          {/* Pro plan extras */}
-          <div className="rounded-2xl glass-card shadow-soft p-5 space-y-3">
-            <h3 className="text-sm font-bold text-foreground">Enterprise Add-ons (Coming Soon)</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {['Multiple Staff', 'API Access', 'White Label', 'Dedicated Support', 'Custom Features'].map(f => (
-                <div key={f} className="flex items-center gap-2 p-2 rounded-lg bg-secondary">
-                  <CreditCard className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-foreground">{f}</span>
-                </div>
-              ))}
+        </div>
+      )}
+
+      {/* Apps / Android */}
+      {activeTab === 'apps' && (
+        <div className="space-y-4">
+          <div className="rounded-2xl glass-card shadow-soft p-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><Smartphone className="w-6 h-6 text-primary" /></div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Android App Management</h3>
+                <p className="text-xs text-muted-foreground">Upload APK, manage version and push notifications</p>
+              </div>
             </div>
+          </div>
+          <div className="rounded-2xl glass-card shadow-soft p-5 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs font-medium text-muted-foreground mb-1 block">App Version</label>
+                <input type="text" value={apkForm.version} onChange={e => setApkForm(f => ({ ...f, version: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
+              <div><label className="text-xs font-medium text-muted-foreground mb-1 block">Push Key</label>
+                <input type="text" placeholder="FCM Key" value={apkForm.push_notification_key} onChange={e => setApkForm(f => ({ ...f, push_notification_key: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Upload APK File</label>
+              <input type="file" accept=".apk" onChange={e => setApkFile(e.target.files?.[0] || null)}
+                className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground" />
+            </div>
+            {apkSettings?.apk_url && (
+              <div className="rounded-xl bg-success/5 border border-success/20 p-3">
+                <p className="text-xs text-success font-medium">✅ Current APK: v{apkSettings.version}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 truncate">{apkSettings.apk_url}</p>
+              </div>
+            )}
+            <button onClick={handleSaveApk} disabled={savingApk}
+              className="px-6 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 disabled:opacity-50">
+              {savingApk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Save APK Settings
+            </button>
           </div>
         </div>
       )}
@@ -698,15 +791,15 @@ const AdminDashboard = () => {
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><Database className="w-6 h-6 text-primary" /></div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">Platform Backup & Data</h3>
-                <p className="text-xs text-muted-foreground">Export/import all platform data for disaster recovery</p>
+                <p className="text-xs text-muted-foreground">Export/import all platform data</p>
               </div>
             </div>
           </div>
 
-          {/* Platform-wide export */}
+          {/* Export */}
           <div className="rounded-2xl glass-card shadow-soft p-5 space-y-3">
-            <p className="text-sm font-semibold text-foreground">Export All Businesses</p>
-            <p className="text-xs text-muted-foreground">Download a combined backup of all {allBusinesses.length} businesses in the platform</p>
+            <p className="text-sm font-semibold text-foreground">Export All Data</p>
+            <p className="text-xs text-muted-foreground">Download complete platform backup with all businesses, users, products, invoices, expenses</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {[
                 { label: 'Businesses', count: allBusinesses.length },
@@ -721,9 +814,21 @@ const AdminDashboard = () => {
               ))}
             </div>
             <button onClick={async () => {
+              const [products, customers, invoices, expenses] = await Promise.all([
+                supabase.from('products').select('*'),
+                supabase.from('customers').select('*'),
+                supabase.from('invoices').select('*'),
+                supabase.from('expenses').select('*'),
+              ]);
               const backup = {
                 version: '2.0', exported_at: new Date().toISOString(), type: 'platform',
                 businesses: allBusinesses, users: allProfiles, stats,
+                data: {
+                  products: products.data || [],
+                  customers: customers.data || [],
+                  invoices: invoices.data || [],
+                  expenses: expenses.data || [],
+                },
               };
               const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
@@ -733,8 +838,22 @@ const AdminDashboard = () => {
               URL.revokeObjectURL(url);
               toast({ title: 'Platform backup exported!' });
             }} className="px-6 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center gap-2">
-              <Database className="w-4 h-4" /> Export Platform Data
+              <Download className="w-4 h-4" /> Export Complete Backup
             </button>
+          </div>
+
+          {/* Import */}
+          <div className="rounded-2xl glass-card shadow-soft p-5 space-y-3">
+            <p className="text-sm font-semibold text-foreground">Import Data</p>
+            <p className="text-xs text-muted-foreground">Restore from a previously exported backup file (products, customers, invoices, expenses)</p>
+            <div className="rounded-xl bg-destructive/5 border border-destructive/20 p-3">
+              <p className="text-xs text-destructive font-medium">⚠️ This will merge imported data with existing data. Duplicate IDs will be overwritten.</p>
+            </div>
+            <label className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-semibold cursor-pointer hover:bg-muted transition-colors">
+              {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {importing ? 'Importing...' : 'Choose Backup File'}
+              <input type="file" accept=".json" onChange={handlePlatformImport} className="hidden" disabled={importing} />
+            </label>
           </div>
 
           {/* Gallery export */}
@@ -756,6 +875,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Gallery Form Dialog */}
       <Dialog open={showGalleryForm} onOpenChange={open => !open && closeForm()}>
         <DialogContent className="rounded-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editingItem ? 'Edit Product' : 'Add Product'}</DialogTitle><DialogDescription>Gallery product for store owners</DialogDescription></DialogHeader>
@@ -799,6 +919,40 @@ const AdminDashboard = () => {
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleSaveGallery} disabled={saving || !form.name.trim()}
               className="w-full py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {editingItem ? 'Update' : 'Add to Gallery'}
+            </motion.button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Plan Form Dialog */}
+      <Dialog open={showPlanForm} onOpenChange={open => { if (!open) { setShowPlanForm(false); setEditingPlan(null); } }}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader><DialogTitle>{editingPlan ? 'Edit Plan' : 'Create Plan'}</DialogTitle><DialogDescription>Dynamic subscription plan</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs text-muted-foreground mb-1 block">Plan Name</label>
+                <input type="text" placeholder="e.g. Pro" value={planForm.name} onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
+              <div><label className="text-xs text-muted-foreground mb-1 block">Price (₹)</label>
+                <input type="number" value={planForm.price} onChange={e => setPlanForm(f => ({ ...f, price: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs text-muted-foreground mb-1 block">Interval</label>
+                <select value={planForm.interval} onChange={e => setPlanForm(f => ({ ...f, interval: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground">
+                  <option value="month">Monthly</option><option value="year">Yearly</option>
+                </select></div>
+              <div><label className="text-xs text-muted-foreground mb-1 block">Sort Order</label>
+                <input type="number" value={planForm.sort_order} onChange={e => setPlanForm(f => ({ ...f, sort_order: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
+            </div>
+            <div><label className="text-xs text-muted-foreground mb-1 block">Features (one per line)</label>
+              <textarea value={planForm.features} onChange={e => setPlanForm(f => ({ ...f, features: e.target.value }))} rows={5} placeholder="Unlimited Products&#10;All Themes&#10;Priority Support"
+                className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" /></div>
+            <motion.button whileTap={{ scale: 0.97 }} onClick={handleSavePlan} disabled={savingPlan || !planForm.name.trim()}
+              className="w-full py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+              {savingPlan ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {editingPlan ? 'Update Plan' : 'Create Plan'}
             </motion.button>
           </div>
         </DialogContent>
