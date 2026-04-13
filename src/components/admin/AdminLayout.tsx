@@ -1,10 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Package, Store, Users, Mail, Bell, Settings, Activity, Shield, ChevronLeft, ChevronRight, CreditCard, Menu, X, LogOut } from 'lucide-react';
+import { BarChart3, Package, Store, Users, Mail, Bell, Settings, Activity, Shield, ChevronLeft, ChevronRight, CreditCard, Menu, X, LogOut, Smartphone, Palette } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-
-import { Palette } from 'lucide-react';
 
 const NAV_ITEMS = [
   { path: '/admin', icon: BarChart3, label: 'Overview' },
@@ -17,6 +15,7 @@ const NAV_ITEMS = [
   { path: '/admin/features', icon: Settings, label: 'Features' },
   { path: '/admin/analytics', icon: Activity, label: 'Analytics' },
   { path: '/admin/subscriptions', icon: CreditCard, label: 'Plans' },
+  { path: '/admin/apps', icon: Smartphone, label: 'Apps' },
   { path: '/admin/backup', icon: Shield, label: 'Backup' },
 ];
 
