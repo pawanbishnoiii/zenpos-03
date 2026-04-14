@@ -5,13 +5,13 @@ import { useRef, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { animate as animeAnimate } from 'animejs';
 import {
   Car, Wrench, Zap, BarChart3, ScanLine, Printer, ChevronRight, Star, Shield,
   ShoppingCart, Pill, Laptop, Shirt, Apple, Coffee, Scissors, BookOpen,
   Hammer, Heart, Search, Users, Receipt, Globe, ArrowRight, Check, Sparkles,
   Store, Phone, Mail, MapPin, MessageSquare, Smartphone, Clock, Lock,
-  Layers, TrendingUp, Eye, Play, ChevronDown, Award, Wifi, Database, Rocket, Crown
+  Layers, TrendingUp, Eye, Play, ChevronDown, Award, Wifi, Database, Rocket, Crown,
+  Download, ChevronUp
 } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -77,62 +77,105 @@ const horizontalCards = [
   { icon: MessageSquare, title: 'WhatsApp', desc: 'Share bills, store links, and receipts directly via WhatsApp with one tap.', color: 'from-emerald-500 to-green-600', stat: '1-Tap', statLabel: 'Bill Sharing' },
 ];
 
+const appScreenshots = [
+  { src: '/images/app-services-screen.jpg', label: 'Services', desc: 'Manage all your services with images, pricing, and categories' },
+  { src: '/images/app-edit-screen.jpg', label: 'Edit Product', desc: 'Edit product details, pricing, stock, and barcodes in one place' },
+  { src: '/images/app-billing-screen.jpg', label: 'Billing', desc: 'Beautiful grid-based billing with category filters and quick add' },
+  { src: '/images/app-cart-screen.jpg', label: 'Cart & CRM', desc: 'Smart cart with customer search, credit management, and payment options' },
+  { src: '/images/app-store-manager-screen.jpg', label: 'Store Manager', desc: 'Full store management with themes, preview, SEO, and customization' },
+];
+
 const Index = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [plans, setPlans] = useState<any[]>([]);
+  const [apkUrl, setApkUrl] = useState('');
+  const [apkVersion, setApkVersion] = useState('');
   const heroRef = useRef<HTMLDivElement>(null);
   const horizontalRef = useRef<HTMLDivElement>(null);
   const horizontalTrackRef = useRef<HTMLDivElement>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
-  const ctaButtonRef = useRef<HTMLButtonElement>(null);
+  const appShowcaseRef = useRef<HTMLDivElement>(null);
+  const builtForRef = useRef<HTMLDivElement>(null);
 
   if (!loading && user) { navigate('/', { replace: true }); }
 
-  // Fetch dynamic pricing plans
+  // Fetch dynamic pricing plans + APK
   useEffect(() => {
     supabase.from('subscription_plans').select('*').eq('is_active', true).order('sort_order').then(({ data }) => {
       if (data && data.length > 0) setPlans(data);
+    });
+    supabase.from('admin_apk_settings').select('*').limit(1).maybeSingle().then(({ data }) => {
+      if (data) { setApkUrl(data.apk_url || ''); setApkVersion(data.version || ''); }
     });
   }, []);
 
   // GSAP Animations
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.from('.hero-title', { y: 80, opacity: 0, duration: 1.2, ease: 'elastic.out(1, 0.5)', delay: 0.2 });
-      gsap.from('.hero-subtitle', { y: 40, opacity: 0, duration: 0.8, ease: 'power3.out', delay: 0.5 });
-      gsap.from('.hero-cta', { scale: 0.5, opacity: 0, duration: 0.6, ease: 'back.out(1.7)', delay: 0.8 });
+      // Hero text reveal with split effect
+      gsap.from('.hero-title', { y: 100, opacity: 0, duration: 1.4, ease: 'expo.out', delay: 0.2 });
+      gsap.from('.hero-subtitle', { y: 50, opacity: 0, duration: 1, ease: 'power3.out', delay: 0.6 });
+      gsap.from('.hero-cta', { scale: 0.5, opacity: 0, duration: 0.8, ease: 'back.out(1.7)', delay: 1 });
+      gsap.from('.hero-stats > *', { y: 30, opacity: 0, stagger: 0.1, duration: 0.6, ease: 'power3.out', delay: 1.2 });
 
+      // Scroll-triggered reveals with stagger
       gsap.utils.toArray<HTMLElement>('.gsap-reveal').forEach(el => {
         gsap.from(el, {
-          y: 60, opacity: 0, duration: 0.8, ease: 'power3.out',
+          y: 80, opacity: 0, duration: 1, ease: 'power3.out',
           scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
         });
       });
 
+      // Blur transition sections
+      gsap.utils.toArray<HTMLElement>('.gsap-blur-in').forEach(el => {
+        gsap.from(el, {
+          filter: 'blur(20px)', opacity: 0, y: 40, duration: 1.2, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 80%' }
+        });
+      });
+
+      // Parallax dashboard preview
       if (dashboardRef.current) {
         gsap.to('.dashboard-desktop', {
-          y: -40, ease: 'none',
+          y: -60, ease: 'none',
           scrollTrigger: { trigger: dashboardRef.current, start: 'top bottom', end: 'bottom top', scrub: 1 }
         });
         gsap.to('.dashboard-mobile', {
-          y: -80, ease: 'none',
+          y: -100, ease: 'none',
           scrollTrigger: { trigger: dashboardRef.current, start: 'top bottom', end: 'bottom top', scrub: 1 }
         });
       }
 
-      // Horizontal scroll
+      // Horizontal scroll - "Built for Indian Businesses" rises from bottom then scrolls right
       if (horizontalRef.current && horizontalTrackRef.current) {
         const track = horizontalTrackRef.current;
-        gsap.to(track, {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: horizontalRef.current,
+            start: 'top top',
+            end: () => `+=${track.scrollWidth - window.innerWidth + 400}`,
+            scrub: 1,
+            pin: true,
+            anticipatePin: 1,
+          }
+        });
+
+        // Title rises from bottom first
+        tl.from('.horizontal-title', { y: 120, opacity: 0, duration: 0.3, ease: 'power3.out' });
+        // Then scroll right
+        tl.to(track, {
           x: () => -(track.scrollWidth - window.innerWidth + 80),
           ease: 'none',
-          scrollTrigger: {
-            trigger: horizontalRef.current, start: 'top top',
-            end: () => `+=${track.scrollWidth - window.innerWidth + 200}`,
-            scrub: 1, pin: true, anticipatePin: 1,
-          }
+          duration: 1,
+        }, 0.15);
+      }
+
+      // App showcase parallax stagger
+      if (appShowcaseRef.current) {
+        gsap.from('.app-phone', {
+          y: 80, opacity: 0, scale: 0.9, stagger: 0.15, duration: 0.8, ease: 'power3.out',
+          scrollTrigger: { trigger: appShowcaseRef.current, start: 'top 70%' }
         });
       }
 
@@ -145,96 +188,123 @@ const Index = () => {
           onUpdate: function () { el.textContent = Math.round(parseFloat(el.textContent || '0')).toString(); }
         });
       });
-    });
 
-    try {
-      animeAnimate('.anime-float', {
-        translateY: [-5, 5], duration: 3000, direction: 'alternate', ease: 'inOutSine', loop: true,
+      // Stagger animations for feature cards
+      gsap.utils.toArray<HTMLElement>('.feature-card').forEach((el, i) => {
+        gsap.from(el, {
+          y: 60, opacity: 0, scale: 0.95, duration: 0.7, ease: 'power3.out',
+          delay: i * 0.05,
+          scrollTrigger: { trigger: el, start: 'top 90%' }
+        });
       });
-    } catch {}
+
+      // Text reveal for section headings
+      gsap.utils.toArray<HTMLElement>('.text-reveal').forEach(el => {
+        gsap.from(el, {
+          y: 50, opacity: 0, clipPath: 'inset(0 0 100% 0)', duration: 1, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 85%' }
+        });
+      });
+    });
 
     return () => ctx.revert();
   }, []);
 
+  // Mouse follow effect
+  useEffect(() => {
+    const cursor = document.getElementById('cursor-glow');
+    if (!cursor) return;
+    const onMove = (e: MouseEvent) => {
+      cursor.style.transform = `translate(${e.clientX - 150}px, ${e.clientY - 150}px)`;
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background overflow-hidden relative">
-      {/* Grid Background */}
-      <div className="pointer-events-none fixed inset-0 opacity-15" style={{
-        backgroundImage: 'linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px)',
-        backgroundSize: '40px 40px', maskImage: 'radial-gradient(circle at center, black 20%, transparent 75%)',
-      }} />
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-96" style={{ background: 'linear-gradient(180deg, hsl(var(--primary) / 0.12), transparent)' }} />
+      {/* Mouse follow glow */}
+      <div id="cursor-glow" className="pointer-events-none fixed w-[300px] h-[300px] rounded-full opacity-[0.04] blur-3xl transition-transform duration-300 ease-out z-0"
+        style={{ background: 'radial-gradient(circle, hsl(var(--primary)), transparent)' }} />
 
-      {/* Floating orbs */}
-      <motion.div animate={{ y: [0, -20, 0], x: [0, 10, 0] }} transition={{ duration: 8, repeat: Infinity }} className="pointer-events-none fixed top-32 left-[10%] w-64 h-64 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, hsl(var(--primary)), transparent)' }} />
-      <motion.div animate={{ y: [0, 20, 0], x: [0, -15, 0] }} transition={{ duration: 10, repeat: Infinity }} className="pointer-events-none fixed top-64 right-[15%] w-48 h-48 rounded-full opacity-8" style={{ background: 'radial-gradient(circle, hsl(var(--accent)), transparent)' }} />
+      {/* Grid Background */}
+      <div className="pointer-events-none fixed inset-0 opacity-[0.08]" style={{
+        backgroundImage: 'linear-gradient(hsl(var(--border) / 0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px)',
+        backgroundSize: '50px 50px', maskImage: 'radial-gradient(circle at center, black 20%, transparent 80%)',
+      }} />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-[600px]" style={{ background: 'linear-gradient(180deg, hsl(var(--primary) / 0.08), transparent)' }} />
+
+      {/* Floating orbs with 3D feel */}
+      <motion.div animate={{ y: [0, -30, 0], x: [0, 15, 0], scale: [1, 1.1, 1] }} transition={{ duration: 10, repeat: Infinity }} className="pointer-events-none fixed top-20 left-[5%] w-72 h-72 rounded-full opacity-[0.06]" style={{ background: 'radial-gradient(circle, hsl(var(--primary)), transparent)' }} />
+      <motion.div animate={{ y: [0, 25, 0], x: [0, -20, 0] }} transition={{ duration: 12, repeat: Infinity }} className="pointer-events-none fixed top-[40%] right-[10%] w-56 h-56 rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, hsl(25 95% 60%), transparent)' }} />
+      <motion.div animate={{ y: [0, -15, 0], x: [0, 10, 0] }} transition={{ duration: 8, repeat: Infinity }} className="pointer-events-none fixed bottom-[20%] left-[20%] w-40 h-40 rounded-full opacity-[0.05]" style={{ background: 'radial-gradient(circle, hsl(var(--accent)), transparent)' }} />
 
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
-        <div className="flex items-center justify-between px-4 md:px-8 py-3 max-w-6xl mx-auto">
+      <nav className="sticky top-0 z-50 backdrop-blur-2xl bg-background/70 border-b border-border/30">
+        <div className="flex items-center justify-between px-4 md:px-8 py-3 max-w-7xl mx-auto">
           <div className="flex items-center gap-2">
-            <motion.div whileHover={{ rotate: 15 }} className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center">
+            <motion.div whileHover={{ rotate: 15, scale: 1.1 }} className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/20">
               <Zap className="w-5 h-5 text-primary-foreground" />
             </motion.div>
             <span className="text-lg font-bold font-display text-foreground">ZEN <span className="gradient-primary-text">POS</span></span>
           </div>
           <div className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#categories" className="hover:text-foreground transition-colors">Categories</a>
-            <a href="#how-it-works" className="hover:text-foreground transition-colors">How it Works</a>
-            <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
-            <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
+            <a href="#features" className="hover:text-foreground transition-colors duration-300">Features</a>
+            <a href="#categories" className="hover:text-foreground transition-colors duration-300">Categories</a>
+            <a href="#app-showcase" className="hover:text-foreground transition-colors duration-300">App</a>
+            <a href="#pricing" className="hover:text-foreground transition-colors duration-300">Pricing</a>
+            <a href="#contact" className="hover:text-foreground transition-colors duration-300">Contact</a>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => navigate('/auth')} className="px-4 py-2 rounded-xl text-sm font-semibold text-foreground hover:bg-secondary transition-colors">Login</button>
             <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate('/auth')}
-              className="px-5 py-2 rounded-xl gradient-primary text-primary-foreground text-sm font-bold glow-primary">
+              className="px-5 py-2 rounded-xl gradient-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20">
               Get Started
             </motion.button>
           </div>
         </div>
       </nav>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8">
         {/* Hero */}
-        <section ref={heroRef} className="pt-16 pb-20 md:pt-24 md:pb-32 text-center space-y-8">
+        <section ref={heroRef} className="pt-16 pb-24 md:pt-28 md:pb-36 text-center space-y-8">
           <div>
             <motion.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-6 border border-primary/20">
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-6 border border-primary/20 backdrop-blur-sm">
               <Sparkles className="w-3.5 h-3.5" /> B2B SaaS for Store Owners — Start Free
             </motion.span>
-            <h1 className="hero-title text-4xl md:text-6xl lg:text-7xl font-bold font-display text-foreground leading-tight">
+            <h1 className="hero-title text-4xl md:text-6xl lg:text-7xl font-bold font-display text-foreground leading-[1.1]">
               The Smartest <span className="gradient-primary-text">POS System</span> <br className="hidden md:block" />
               for Every Indian Business
             </h1>
-            <p className="hero-subtitle text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-5 leading-relaxed">
+            <p className="hero-subtitle text-muted-foreground text-base md:text-xl max-w-2xl mx-auto mt-6 leading-relaxed">
               Billing, inventory, customer management, online store, email alerts and analytics — all in one beautiful app.
-              Built for car washes, grocery, medical, electronics, fashion, cafés, salons and 8+ more categories.
             </p>
           </div>
 
           <div className="hero-cta flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <motion.button ref={ctaButtonRef} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/auth')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl gradient-primary text-primary-foreground font-bold text-sm glow-primary flex items-center justify-center gap-2 shadow-xl">
-              Start Free Now <Rocket className="w-4 h-4" />
+            <motion.button whileHover={{ scale: 1.03, boxShadow: '0 20px 40px -10px hsl(var(--primary) / 0.4)' }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/auth')}
+              className="w-full sm:w-auto px-10 py-4 rounded-2xl gradient-primary text-primary-foreground font-bold text-base shadow-xl shadow-primary/20 flex items-center justify-center gap-2 transition-shadow">
+              Start Free Now <Rocket className="w-5 h-5" />
             </motion.button>
             <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }}
               onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-              className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-secondary text-secondary-foreground font-semibold text-sm flex items-center justify-center gap-2">
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-secondary text-secondary-foreground font-semibold text-base flex items-center justify-center gap-2 border border-border/50">
               <Play className="w-4 h-4" /> Explore Features
             </motion.button>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center justify-center gap-6 md:gap-10 pt-8">
+          <div className="hero-stats flex items-center justify-center gap-6 md:gap-12 pt-8">
             {platformStats.map((s, i) => {
               const Icon = s.icon;
               return (
-                <motion.div key={s.label} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 + i * 0.1 }}
-                  className="text-center anime-float">
-                  <div className="w-12 h-12 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-2">
-                    <Icon className="w-5 h-5 text-primary" />
-                  </div>
+                <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.1 }}
+                  className="text-center">
+                  <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 3 + i * 0.5, repeat: Infinity }}
+                    className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-2 border border-primary/10">
+                    <Icon className="w-6 h-6 text-primary" />
+                  </motion.div>
                   <p className="text-2xl md:text-3xl font-bold font-display gradient-primary-text">{s.val}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
                 </motion.div>
@@ -242,64 +312,87 @@ const Index = () => {
             })}
           </div>
 
-          <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity }} className="pt-4">
-            <ChevronDown className="w-5 h-5 mx-auto text-muted-foreground/50" />
+          <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity }} className="pt-6">
+            <ChevronDown className="w-6 h-6 mx-auto text-muted-foreground/40" />
           </motion.div>
         </section>
 
-        {/* Dashboard Preview */}
-        <section ref={dashboardRef} className="gsap-reveal py-16 md:py-20">
-          <div className="text-center space-y-3 mb-10">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Live Preview</span>
-            <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Beautiful Dashboard</h2>
+        {/* Dashboard Preview with Parallax */}
+        <section ref={dashboardRef} className="gsap-blur-in py-16 md:py-24">
+          <div className="text-center space-y-3 mb-12">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Live Preview</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Beautiful Dashboard</h2>
             <p className="text-sm text-muted-foreground">See how your business looks on desktop and mobile</p>
           </div>
-          <div className="relative max-w-4xl mx-auto">
-            <div className="dashboard-desktop rounded-3xl overflow-hidden border border-border/50 shadow-elevated bg-card">
-              <div className="h-8 bg-secondary flex items-center gap-1.5 px-4">
-                <div className="w-3 h-3 rounded-full bg-destructive/50" />
-                <div className="w-3 h-3 rounded-full bg-warning/50" />
-                <div className="w-3 h-3 rounded-full bg-success/50" />
+          <div className="relative max-w-5xl mx-auto">
+            <div className="dashboard-desktop rounded-3xl overflow-hidden border border-border/30 shadow-2xl bg-card">
+              <div className="h-9 bg-secondary/80 flex items-center gap-1.5 px-4 border-b border-border/30">
+                <div className="w-3 h-3 rounded-full bg-red-400/60" />
+                <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
+                <div className="w-3 h-3 rounded-full bg-green-400/60" />
                 <span className="ml-4 text-[10px] text-muted-foreground font-medium">zenpos.app/dashboard</span>
               </div>
               <img src="/images/dashboard-desktop.png" alt="Zen POS Dashboard Desktop View" className="w-full" loading="lazy" />
             </div>
-            <div className="dashboard-mobile absolute -right-4 md:right-8 -bottom-8 w-32 md:w-48">
-              <div className="rounded-3xl overflow-hidden border-4 border-foreground/10 shadow-2xl bg-card">
-                <div className="h-6 bg-foreground/5 flex items-center justify-center">
-                  <div className="w-12 h-1.5 rounded-full bg-foreground/10" />
+            <div className="dashboard-mobile absolute -right-2 md:right-8 -bottom-12 w-36 md:w-52">
+              <div className="rounded-[2rem] overflow-hidden border-[5px] border-foreground/10 shadow-2xl bg-card">
+                <div className="h-7 bg-foreground/5 flex items-center justify-center">
+                  <div className="w-14 h-1.5 rounded-full bg-foreground/10" />
                 </div>
                 <img src="/images/dashboard-mobile.jpg" alt="Zen POS Dashboard Mobile View" className="w-full" loading="lazy" />
               </div>
             </div>
           </div>
-          <div className="dashboard-desktop mt-12 rounded-3xl overflow-hidden border border-border/50 shadow-elevated bg-card max-w-4xl mx-auto">
-            <div className="h-8 bg-secondary flex items-center gap-1.5 px-4">
-              <div className="w-3 h-3 rounded-full bg-destructive/50" />
-              <div className="w-3 h-3 rounded-full bg-warning/50" />
-              <div className="w-3 h-3 rounded-full bg-success/50" />
-              <span className="ml-4 text-[10px] text-muted-foreground font-medium">zenpos.app/dashboard — Quick Actions</span>
-            </div>
-            <img src="/images/dashboard-desktop2.png" alt="Zen POS Quick Actions" className="w-full" loading="lazy" />
+        </section>
+
+        {/* App Showcase - Mobile Screenshots */}
+        <section id="app-showcase" ref={appShowcaseRef} className="gsap-blur-in py-20 md:py-28 space-y-10">
+          <div className="text-center space-y-3">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Mobile App</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Everything on Your Phone</h2>
+            <p className="text-sm text-muted-foreground max-w-lg mx-auto">Manage your entire business from your pocket — billing, products, customers, and store management</p>
+          </div>
+          <div className="flex gap-4 md:gap-6 overflow-x-auto no-scrollbar px-4 -mx-4 pb-8 snap-x snap-mandatory">
+            {appScreenshots.map((screen, i) => (
+              <motion.div key={screen.label}
+                className="app-phone shrink-0 snap-center group"
+                whileHover={{ y: -12, rotateY: 5 }}
+                style={{ perspective: '1000px' }}>
+                <div className="w-[240px] md:w-[280px] rounded-[2rem] overflow-hidden border-[5px] border-foreground/10 shadow-2xl bg-card relative">
+                  <div className="h-6 bg-foreground/5 flex items-center justify-center">
+                    <div className="w-12 h-1.5 rounded-full bg-foreground/10" />
+                  </div>
+                  <img src={screen.src} alt={screen.label} className="w-full" loading="lazy" />
+                  {/* Overlay on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-5">
+                    <div>
+                      <p className="text-white text-sm font-bold">{screen.label}</p>
+                      <p className="text-white/70 text-xs mt-1">{screen.desc}</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-center text-xs font-semibold text-muted-foreground mt-3">{screen.label}</p>
+              </motion.div>
+            ))}
           </div>
         </section>
 
         {/* Store Categories */}
-        <section id="categories" className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="categories" className="gsap-blur-in py-16 md:py-24 space-y-8">
           <div className="text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">15+ Categories</span>
-            <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Works for Every Store</h2>
-            <p className="text-sm text-muted-foreground max-w-lg mx-auto">No matter what you sell — ZEN POS adapts to your business with custom dashboards and workflows</p>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">15+ Categories</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Works for Every Store</h2>
+            <p className="text-sm text-muted-foreground max-w-lg mx-auto">No matter what you sell — ZEN POS adapts to your business</p>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
             {storeCategories.map((cat, i) => {
               const Icon = cat.icon;
               return (
                 <motion.div key={cat.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  transition={{ delay: i * 0.04 }} whileHover={{ scale: 1.05, y: -5 }}
-                  className="rounded-2xl glass-card shadow-soft p-4 text-center space-y-2 hover:shadow-elevated transition-all cursor-pointer group"
+                  transition={{ delay: i * 0.04 }} whileHover={{ scale: 1.08, y: -8 }}
+                  className="feature-card rounded-2xl glass-card shadow-soft p-4 text-center space-y-2 hover:shadow-elevated transition-all cursor-pointer group border border-border/30"
                   onClick={() => navigate('/auth')}>
-                  <motion.div whileHover={{ rotate: 10 }} className={`w-12 h-12 mx-auto rounded-xl ${cat.bg} flex items-center justify-center`}>
+                  <motion.div whileHover={{ rotate: 10 }} className={`w-12 h-12 mx-auto rounded-xl ${cat.bg} flex items-center justify-center backdrop-blur-sm`}>
                     <Icon className={`w-6 h-6 ${cat.color}`} />
                   </motion.div>
                   <p className="text-xs font-semibold text-foreground">{cat.name}</p>
@@ -309,21 +402,21 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Features Grid */}
-        <section id="features" className="gsap-reveal py-16 md:py-20 space-y-8">
+        {/* Features Grid with stagger */}
+        <section id="features" className="gsap-blur-in py-16 md:py-24 space-y-8">
           <div className="text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Powerful Tools</span>
-            <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Everything You Need</h2>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Powerful Tools</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Everything You Need</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {features.map((f, i) => {
               const Icon = f.icon;
               return (
-                <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }} whileHover={{ y: -4 }}
-                  className="rounded-2xl glass-card shadow-soft p-5 space-y-3 hover:shadow-elevated transition-all group">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Icon className="w-6 h-6 text-primary" />
+                <motion.div key={f.title}
+                  className="feature-card rounded-2xl glass-card shadow-soft p-6 space-y-3 hover:shadow-elevated transition-all group border border-border/30"
+                  whileHover={{ y: -6 }}>
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform border border-primary/10">
+                    <Icon className="w-7 h-7 text-primary" />
                   </div>
                   <h3 className="text-sm font-bold text-foreground">{f.title}</h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
@@ -334,22 +427,22 @@ const Index = () => {
         </section>
 
         {/* How it Works */}
-        <section id="how-it-works" className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="how-it-works" className="gsap-blur-in py-16 md:py-24 space-y-8">
           <div className="text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Simple Setup</span>
-            <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Get Started in 3 Minutes</h2>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Simple Setup</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Get Started in 3 Minutes</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {howItWorks.map((s, i) => {
               const Icon = s.icon;
               return (
-                <motion.div key={s.step} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }} className="rounded-2xl glass-card shadow-soft p-6 space-y-3 text-center relative overflow-hidden">
-                  <div className="absolute -top-4 -right-4 text-8xl font-bold font-display text-primary/5">{s.step}</div>
-                  <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Icon className="w-7 h-7 text-primary" />
+                <motion.div key={s.step} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                  transition={{ delay: i * 0.15, ease: 'easeOut' }} className="feature-card rounded-2xl glass-card shadow-soft p-6 space-y-3 text-center relative overflow-hidden border border-border/30">
+                  <div className="absolute -top-6 -right-6 text-[100px] font-bold font-display text-primary/[0.03]">{s.step}</div>
+                  <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/10">
+                    <Icon className="w-8 h-8 text-primary" />
                   </div>
-                  <span className="text-xl font-bold font-display gradient-primary-text">{s.step}</span>
+                  <span className="text-2xl font-bold font-display gradient-primary-text">{s.step}</span>
                   <h3 className="text-sm font-bold text-foreground">{s.title}</h3>
                   <p className="text-xs text-muted-foreground">{s.desc}</p>
                 </motion.div>
@@ -359,39 +452,42 @@ const Index = () => {
         </section>
       </div>
 
-      {/* Horizontal Scroll with Creative Cards */}
+      {/* Horizontal Scroll - Built for Indian Businesses */}
       <section ref={horizontalRef} className="relative h-screen flex items-center overflow-hidden bg-gradient-to-r from-background via-card to-background">
-        <div className="absolute inset-0 opacity-5" style={{
+        <div className="absolute inset-0 opacity-[0.03]" style={{
           backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
+          backgroundSize: '40px 40px',
         }} />
+        {/* Gooey overlay effect */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[20%] left-[10%] w-40 h-40 rounded-full opacity-[0.05] blur-3xl animate-pulse" style={{ background: 'hsl(var(--primary))' }} />
+          <div className="absolute bottom-[20%] right-[15%] w-56 h-56 rounded-full opacity-[0.04] blur-3xl animate-pulse" style={{ background: 'hsl(25 95% 60%)', animationDelay: '2s' }} />
+        </div>
         <div ref={horizontalTrackRef} className="flex gap-8 px-[10vw] items-center">
-          <div className="min-w-[40vw] md:min-w-[30vw] shrink-0 pr-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Why Choose Us</span>
-            <h2 className="text-3xl md:text-5xl font-bold font-display text-foreground mt-2">Built for<br /><span className="gradient-primary-text">Indian Businesses</span></h2>
-            <p className="text-sm text-muted-foreground mt-3 max-w-xs">Scroll to explore the powerful features that make ZEN POS the #1 choice.</p>
+          <div className="horizontal-title min-w-[40vw] md:min-w-[35vw] shrink-0 pr-4">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Why Choose Us</span>
+            <h2 className="text-3xl md:text-6xl font-bold font-display text-foreground mt-3 leading-[1.1]">Built for<br /><span className="gradient-primary-text">Indian Businesses</span></h2>
+            <p className="text-sm text-muted-foreground mt-4 max-w-sm">Scroll to explore the powerful features that make ZEN POS the #1 choice for store owners across India.</p>
           </div>
           {horizontalCards.map((f, i) => {
             const Icon = f.icon;
             return (
-              <div key={f.title} className="min-w-[320px] md:min-w-[380px] shrink-0 rounded-3xl glass-card shadow-elevated p-0 overflow-hidden hover:scale-[1.02] transition-transform group">
-                {/* Card gradient header */}
-                <div className={`bg-gradient-to-br ${f.color} p-6 pb-10 relative`}>
-                  <div className="absolute top-4 right-4 w-20 h-20 rounded-full bg-white/10 blur-2xl" />
-                  <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3">
-                    <Icon className="w-7 h-7 text-white" />
+              <div key={f.title} className="min-w-[300px] md:min-w-[380px] shrink-0 rounded-3xl glass-card shadow-elevated p-0 overflow-hidden hover:scale-[1.03] transition-all duration-500 group border border-border/30">
+                <div className={`bg-gradient-to-br ${f.color} p-6 pb-12 relative overflow-hidden`}>
+                  <div className="absolute top-4 right-4 w-24 h-24 rounded-full bg-white/10 blur-2xl" />
+                  <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-white/5 blur-xl" />
+                  <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 border border-white/10">
+                    <Icon className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-white">{f.title}</h3>
                 </div>
-                {/* Card body */}
-                <div className="p-6 -mt-4 relative">
-                  {/* Floating stat badge */}
-                  <div className="absolute -top-6 right-6 px-4 py-2 rounded-2xl bg-card border border-border shadow-lg text-center">
-                    <p className="text-lg font-black gradient-primary-text">{f.stat}</p>
+                <div className="p-6 -mt-6 relative">
+                  <div className="absolute -top-7 right-6 px-5 py-2.5 rounded-2xl bg-card border border-border shadow-xl text-center">
+                    <p className="text-xl font-black gradient-primary-text">{f.stat}</p>
                     <p className="text-[9px] text-muted-foreground font-medium">{f.statLabel}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed mt-4">{f.desc}</p>
-                  <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-primary group-hover:gap-2 transition-all">
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-6">{f.desc}</p>
+                  <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-primary group-hover:gap-3 transition-all duration-300">
                     Learn more <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -401,19 +497,19 @@ const Index = () => {
         </div>
       </section>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8">
         {/* Testimonials */}
-        <section className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section className="gsap-blur-in py-16 md:py-24 space-y-8">
           <div className="text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Happy Owners</span>
-            <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Loved by Business Owners</h2>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Happy Owners</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Loved by Business Owners</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {testimonials.map((t, i) => (
               <motion.div key={t.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }} whileHover={{ y: -3 }}
-                className="rounded-2xl glass-card shadow-soft p-5 space-y-3 hover:shadow-elevated transition-all">
-                <div className="flex gap-1">{[...Array(5)].map((_, j) => <Star key={j} className="w-3.5 h-3.5 text-warning fill-warning" />)}</div>
+                transition={{ delay: i * 0.08 }} whileHover={{ y: -4 }}
+                className="feature-card rounded-2xl glass-card shadow-soft p-6 space-y-3 hover:shadow-elevated transition-all border border-border/30">
+                <div className="flex gap-0.5">{[...Array(5)].map((_, j) => <Star key={j} className="w-3.5 h-3.5 text-warning fill-warning" />)}</div>
                 <p className="text-sm text-foreground italic leading-relaxed">"{t.text}"</p>
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{t.avatar}</span>
@@ -425,10 +521,10 @@ const Index = () => {
         </section>
 
         {/* Dynamic Pricing */}
-        <section id="pricing" className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="pricing" className="gsap-blur-in py-16 md:py-24 space-y-8">
           <div className="text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Pricing Plans</span>
-            <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Pricing Plans</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">
               {plans.length > 0 ? 'Choose Your Plan' : 'Free Forever'}
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -437,16 +533,16 @@ const Index = () => {
           </div>
 
           {plans.length > 0 ? (
-            <div className={`grid grid-cols-1 ${plans.length === 2 ? 'md:grid-cols-2 max-w-2xl' : plans.length >= 3 ? 'md:grid-cols-3 max-w-4xl' : 'max-w-md'} mx-auto gap-5`}>
+            <div className={`grid grid-cols-1 ${plans.length === 2 ? 'md:grid-cols-2 max-w-2xl' : plans.length >= 3 ? 'md:grid-cols-3 max-w-5xl' : 'max-w-md'} mx-auto gap-6`}>
               {plans.map((plan, i) => {
                 const featuresList = Array.isArray(plan.features) ? plan.features : [];
                 const isPopular = i === 1 && plans.length > 1;
                 return (
-                  <motion.div key={plan.id} whileHover={{ y: -6, scale: 1.02 }}
-                    className={`rounded-3xl glass-card p-7 space-y-5 relative overflow-hidden transition-all ${isPopular ? 'shadow-elevated border-2 border-primary/30 ring-2 ring-primary/10' : 'shadow-soft border border-border/50'}`}>
-                    {isPopular && <div className="absolute top-0 inset-x-0 h-1 gradient-primary" />}
+                  <motion.div key={plan.id} whileHover={{ y: -8, scale: 1.02 }}
+                    className={`feature-card rounded-3xl glass-card p-7 space-y-5 relative overflow-hidden transition-all ${isPopular ? 'shadow-elevated border-2 border-primary/40 ring-2 ring-primary/10' : 'shadow-soft border border-border/50'}`}>
+                    {isPopular && <div className="absolute top-0 inset-x-0 h-1.5 gradient-primary" />}
                     {isPopular && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
                         <Crown className="w-3 h-3" /> Most Popular
                       </span>
                     )}
@@ -457,16 +553,16 @@ const Index = () => {
                         {plan.price > 0 && <span className="text-base font-normal text-muted-foreground">/{plan.interval}</span>}
                       </p>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       {featuresList.map((f: string, j: number) => (
-                        <div key={j} className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center shrink-0"><Check className="w-3 h-3 text-success" /></div>
+                        <div key={j} className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center shrink-0 mt-0.5"><Check className="w-3 h-3 text-success" /></div>
                           <span className="text-sm text-foreground">{f}</span>
                         </div>
                       ))}
                     </div>
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/auth')}
-                      className={`w-full py-3.5 rounded-xl font-bold text-sm ${isPopular ? 'gradient-primary text-primary-foreground glow-primary' : 'bg-secondary text-secondary-foreground hover:bg-muted'}`}>
+                      className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all ${isPopular ? 'gradient-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-secondary text-secondary-foreground hover:bg-muted'}`}>
                       {plan.price === 0 ? 'Start Free' : 'Subscribe Now'}
                     </motion.button>
                   </motion.div>
@@ -475,9 +571,9 @@ const Index = () => {
             </div>
           ) : (
             <div className="max-w-md mx-auto">
-              <motion.div whileHover={{ y: -4 }}
+              <motion.div whileHover={{ y: -6 }}
                 className="rounded-3xl glass-card shadow-elevated p-8 space-y-5 border-2 border-primary/20 relative overflow-hidden">
-                <div className="absolute top-0 inset-x-0 h-1 gradient-primary" />
+                <div className="absolute top-0 inset-x-0 h-1.5 gradient-primary" />
                 <div className="text-center space-y-1">
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-bold mb-2"><Award className="w-3 h-3" /> Best Value</span>
                   <p className="text-xs font-bold uppercase tracking-wider text-primary">Free Plan</p>
@@ -492,7 +588,7 @@ const Index = () => {
                   ))}
                 </div>
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/auth')}
-                  className="w-full py-3.5 rounded-xl gradient-primary text-primary-foreground font-bold text-sm glow-primary">
+                  className="w-full py-3.5 rounded-xl gradient-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20">
                   Get Started Free
                 </motion.button>
               </motion.div>
@@ -501,16 +597,16 @@ const Index = () => {
         </section>
 
         {/* Find Store */}
-        <section className="gsap-reveal py-16 md:py-20 space-y-6">
+        <section className="gsap-blur-in py-16 md:py-24 space-y-6">
           <div className="text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Discover</span>
-            <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Find a Store</h2>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Discover</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Find a Store</h2>
           </div>
           <div className="max-w-md mx-auto">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <input type="text" placeholder="Enter store name or slug..."
-                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-soft"
+                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-soft"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     const val = (e.target as HTMLInputElement).value.trim();
@@ -522,21 +618,21 @@ const Index = () => {
         </section>
 
         {/* FAQ */}
-        <section className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section className="gsap-blur-in py-16 md:py-24 space-y-8">
           <div className="text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">FAQ</span>
-            <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Frequently Asked Questions</h2>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">FAQ</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Frequently Asked Questions</h2>
           </div>
           <div className="max-w-2xl mx-auto space-y-3">
             {[
-              { q: 'Is ZEN POS really free?', a: 'Yes! ZEN POS offers a free plan with all core features. Premium plans available for advanced features.' },
-              { q: 'Can I use it on my phone?', a: 'Absolutely! ZEN POS is built mobile-first with touch-optimized interfaces.' },
+              { q: 'Is ZEN POS really free?', a: 'Yes! ZEN POS offers a free plan with all core features. Premium plans with advanced features like custom invoice branding, multi-staff access, and email notifications are available.' },
+              { q: 'Can I use it on my phone?', a: 'Absolutely! ZEN POS is built mobile-first with touch-optimized interfaces. We also offer an Android app for download.' },
               { q: 'Which printers are supported?', a: 'We support Epson, Canon, HP, Samsung, SUNMI, Star Micronics, Citizen and generic thermal printers.' },
-              { q: 'Can I have an online store?', a: 'Yes! Every business gets a unique public store URL with 10+ beautiful themes.' },
-              { q: 'Is my data secure?', a: 'All data is encrypted with row-level security and automatic cloud backups.' },
+              { q: 'Can I have an online store?', a: 'Yes! Every business gets a unique public store URL with 10+ beautiful themes including Car Wash, Auto Service, Grocery, Fashion and more.' },
+              { q: 'Is my data secure?', a: 'All data is encrypted with row-level security and automatic cloud backups. You can also export your data anytime.' },
             ].map((faq, i) => (
-              <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
-                className="rounded-2xl glass-card shadow-soft p-5 space-y-2">
+              <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+                className="feature-card rounded-2xl glass-card shadow-soft p-6 space-y-2 border border-border/30">
                 <h3 className="text-sm font-bold text-foreground">{faq.q}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">{faq.a}</p>
               </motion.div>
@@ -545,10 +641,10 @@ const Index = () => {
         </section>
 
         {/* Contact */}
-        <section id="contact" className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="contact" className="gsap-blur-in py-16 md:py-24 space-y-8">
           <div className="text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Get in Touch</span>
-            <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Contact Us</h2>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Get in Touch</span>
+            <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Contact Us</h2>
           </div>
           <div className="max-w-lg mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
@@ -558,8 +654,8 @@ const Index = () => {
             ].map(c => {
               const Icon = c.icon;
               return (
-                <motion.div key={c.label} whileHover={{ y: -3 }} className="rounded-2xl glass-card shadow-soft p-5 text-center space-y-2">
-                  <div className="w-12 h-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center"><Icon className="w-5 h-5 text-primary" /></div>
+                <motion.div key={c.label} whileHover={{ y: -4 }} className="feature-card rounded-2xl glass-card shadow-soft p-5 text-center space-y-2 border border-border/30">
+                  <div className="w-12 h-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center border border-primary/10"><Icon className="w-5 h-5 text-primary" /></div>
                   <p className="text-xs font-bold text-foreground">{c.label}</p>
                   <p className="text-xs text-muted-foreground">{c.value}</p>
                 </motion.div>
@@ -569,15 +665,15 @@ const Index = () => {
         </section>
 
         {/* CTA Banner */}
-        <section className="gsap-reveal py-16 md:py-20">
+        <section className="gsap-blur-in py-16 md:py-24">
           <motion.div whileHover={{ scale: 1.01 }}
-            className="rounded-3xl gradient-primary p-8 md:p-14 text-center space-y-5 glow-primary relative overflow-hidden">
+            className="rounded-3xl gradient-primary p-10 md:p-16 text-center space-y-6 shadow-2xl shadow-primary/20 relative overflow-hidden">
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
             <div className="relative">
-              <h2 className="text-3xl md:text-4xl font-bold font-display text-primary-foreground">Ready to Simplify Your Business?</h2>
-              <p className="text-primary-foreground/80 text-sm max-w-md mx-auto mt-3">Join thousands of business owners who use ZEN POS to save time, increase revenue, and delight customers.</p>
+              <h2 className="text-3xl md:text-5xl font-bold font-display text-primary-foreground">Ready to Simplify Your Business?</h2>
+              <p className="text-primary-foreground/80 text-sm md:text-base max-w-md mx-auto mt-4">Join thousands of business owners who use ZEN POS to save time, increase revenue, and delight customers.</p>
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/auth')}
-                className="mt-6 px-10 py-4 rounded-2xl bg-primary-foreground text-primary font-bold text-sm shadow-xl">
+                className="mt-8 px-12 py-4 rounded-2xl bg-primary-foreground text-primary font-bold text-base shadow-xl">
                 Start Free Today — No Credit Card
               </motion.button>
             </div>
@@ -585,14 +681,24 @@ const Index = () => {
         </section>
 
         {/* Footer */}
-        <footer className="py-10 border-t border-border">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div className="space-y-3">
+        <footer className="py-12 border-t border-border/30">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+            <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center"><Zap className="w-4 h-4 text-primary-foreground" /></div>
-                <span className="text-sm font-bold font-display text-foreground">ZEN POS</span>
+                <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/20"><Zap className="w-4 h-4 text-primary-foreground" /></div>
+                <span className="text-base font-bold font-display text-foreground">ZEN POS</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">The smartest B2B SaaS POS system for every Indian business.</p>
+              {/* Android Download */}
+              {apkUrl && (
+                <motion.a href={apkUrl} download whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-xs font-bold shadow-lg group">
+                  <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
+                    <Download className="w-4 h-4" />
+                  </motion.div>
+                  Download Android App {apkVersion && <span className="text-[10px] opacity-60">v{apkVersion}</span>}
+                </motion.a>
+              )}
             </div>
             <div className="space-y-2">
               <p className="text-xs font-bold text-foreground uppercase tracking-wider">Product</p>
@@ -611,7 +717,7 @@ const Index = () => {
               </div>
             </div>
           </div>
-          <div className="border-t border-border pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="border-t border-border/30 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">© 2026 ZEN POS. All rights reserved.</p>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span>Terms</span><span>Privacy</span><span>Cookies</span>
