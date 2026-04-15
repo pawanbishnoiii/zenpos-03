@@ -96,11 +96,9 @@ const Index = () => {
   const horizontalTrackRef = useRef<HTMLDivElement>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
   const appShowcaseRef = useRef<HTMLDivElement>(null);
-  const builtForRef = useRef<HTMLDivElement>(null);
 
   if (!loading && user) { navigate('/', { replace: true }); }
 
-  // Fetch dynamic pricing plans + APK
   useEffect(() => {
     supabase.from('subscription_plans').select('*').eq('is_active', true).order('sort_order').then(({ data }) => {
       if (data && data.length > 0) setPlans(data);
@@ -110,16 +108,20 @@ const Index = () => {
     });
   }, []);
 
-  // GSAP Animations
+  // GSAP Animations - Full Production
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Hero text reveal with split effect
-      gsap.from('.hero-title', { y: 100, opacity: 0, duration: 1.4, ease: 'expo.out', delay: 0.2 });
-      gsap.from('.hero-subtitle', { y: 50, opacity: 0, duration: 1, ease: 'power3.out', delay: 0.6 });
-      gsap.from('.hero-cta', { scale: 0.5, opacity: 0, duration: 0.8, ease: 'back.out(1.7)', delay: 1 });
-      gsap.from('.hero-stats > *', { y: 30, opacity: 0, stagger: 0.1, duration: 0.6, ease: 'power3.out', delay: 1.2 });
+      // Hero - split text reveal with stagger
+      gsap.from('.hero-title', {
+        y: 120, opacity: 0, duration: 1.6, ease: 'expo.out', delay: 0.2,
+        clipPath: 'inset(0 0 100% 0)',
+        onComplete: function() { gsap.set('.hero-title', { clipPath: 'none' }); }
+      });
+      gsap.from('.hero-subtitle', { y: 60, opacity: 0, filter: 'blur(10px)', duration: 1.2, ease: 'power3.out', delay: 0.7 });
+      gsap.from('.hero-cta', { scale: 0.3, opacity: 0, duration: 1, ease: 'back.out(1.7)', delay: 1.1 });
+      gsap.from('.hero-stats > *', { y: 40, opacity: 0, scale: 0.8, stagger: 0.12, duration: 0.7, ease: 'power3.out', delay: 1.4 });
 
-      // Scroll-triggered reveals with stagger
+      // Scroll-triggered reveals with clipPath
       gsap.utils.toArray<HTMLElement>('.gsap-reveal').forEach(el => {
         gsap.from(el, {
           y: 80, opacity: 0, duration: 1, ease: 'power3.out',
@@ -127,10 +129,10 @@ const Index = () => {
         });
       });
 
-      // Blur transition sections
+      // Blur + slide transitions between sections
       gsap.utils.toArray<HTMLElement>('.gsap-blur-in').forEach(el => {
         gsap.from(el, {
-          filter: 'blur(20px)', opacity: 0, y: 40, duration: 1.2, ease: 'power3.out',
+          filter: 'blur(20px)', opacity: 0, y: 60, duration: 1.4, ease: 'power3.out',
           scrollTrigger: { trigger: el, start: 'top 80%' }
         });
       });
@@ -138,71 +140,78 @@ const Index = () => {
       // Parallax dashboard preview
       if (dashboardRef.current) {
         gsap.to('.dashboard-desktop', {
-          y: -60, ease: 'none',
+          y: -80, ease: 'none',
           scrollTrigger: { trigger: dashboardRef.current, start: 'top bottom', end: 'bottom top', scrub: 1 }
         });
         gsap.to('.dashboard-mobile', {
-          y: -100, ease: 'none',
+          y: -120, ease: 'none',
           scrollTrigger: { trigger: dashboardRef.current, start: 'top bottom', end: 'bottom top', scrub: 1 }
         });
       }
 
-      // Horizontal scroll - "Built for Indian Businesses" rises from bottom then scrolls right
+      // Horizontal scroll - title rises then cards scroll right with speed variation
       if (horizontalRef.current && horizontalTrackRef.current) {
         const track = horizontalTrackRef.current;
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: horizontalRef.current,
             start: 'top top',
-            end: () => `+=${track.scrollWidth - window.innerWidth + 400}`,
+            end: () => `+=${track.scrollWidth - window.innerWidth + 600}`,
             scrub: 1,
             pin: true,
             anticipatePin: 1,
           }
         });
 
-        // Title rises from bottom first
-        tl.from('.horizontal-title', { y: 120, opacity: 0, duration: 0.3, ease: 'power3.out' });
-        // Then scroll right
+        // Title rises from bottom with blur
+        tl.from('.horizontal-title', { y: 150, opacity: 0, filter: 'blur(15px)', duration: 0.3, ease: 'power3.out' });
+        // Cards scroll right with eased motion
         tl.to(track, {
-          x: () => -(track.scrollWidth - window.innerWidth + 80),
+          x: () => -(track.scrollWidth - window.innerWidth + 100),
           ease: 'none',
           duration: 1,
         }, 0.15);
       }
 
-      // App showcase parallax stagger
+      // App showcase - staggered parallax entry
       if (appShowcaseRef.current) {
         gsap.from('.app-phone', {
-          y: 80, opacity: 0, scale: 0.9, stagger: 0.15, duration: 0.8, ease: 'power3.out',
+          y: 100, opacity: 0, scale: 0.85, rotateY: 15, stagger: 0.15, duration: 1, ease: 'power3.out',
           scrollTrigger: { trigger: appShowcaseRef.current, start: 'top 70%' }
         });
       }
 
-      // Counter animations
-      gsap.utils.toArray<HTMLElement>('.gsap-counter').forEach(el => {
-        const target = parseInt(el.dataset.target || '0');
-        gsap.from(el, {
-          textContent: 0, duration: 2, ease: 'power1.out', snap: { textContent: 1 },
-          scrollTrigger: { trigger: el, start: 'top 90%' },
-          onUpdate: function () { el.textContent = Math.round(parseFloat(el.textContent || '0')).toString(); }
-        });
-      });
-
-      // Stagger animations for feature cards
+      // Feature cards stagger
       gsap.utils.toArray<HTMLElement>('.feature-card').forEach((el, i) => {
         gsap.from(el, {
-          y: 60, opacity: 0, scale: 0.95, duration: 0.7, ease: 'power3.out',
-          delay: i * 0.05,
+          y: 60, opacity: 0, scale: 0.92, duration: 0.8, ease: 'power3.out',
+          delay: i * 0.04,
           scrollTrigger: { trigger: el, start: 'top 90%' }
         });
       });
 
-      // Text reveal for section headings
+      // Text reveal with clipPath for headings
       gsap.utils.toArray<HTMLElement>('.text-reveal').forEach(el => {
         gsap.from(el, {
-          y: 50, opacity: 0, clipPath: 'inset(0 0 100% 0)', duration: 1, ease: 'power3.out',
+          y: 60, opacity: 0, clipPath: 'inset(0 0 100% 0)', duration: 1.2, ease: 'power3.out',
           scrollTrigger: { trigger: el, start: 'top 85%' }
+        });
+      });
+
+      // Pricing cards entrance
+      gsap.utils.toArray<HTMLElement>('.pricing-card').forEach((el, i) => {
+        gsap.from(el, {
+          y: 80, opacity: 0, scale: 0.9, rotateX: 10, duration: 0.9, ease: 'power3.out',
+          delay: i * 0.15,
+          scrollTrigger: { trigger: el, start: 'top 85%' }
+        });
+      });
+
+      // Testimonial cards slide in from alternating sides
+      gsap.utils.toArray<HTMLElement>('.testimonial-card').forEach((el, i) => {
+        gsap.from(el, {
+          x: i % 2 === 0 ? -60 : 60, opacity: 0, duration: 0.8, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 90%' }
         });
       });
     });
@@ -210,12 +219,12 @@ const Index = () => {
     return () => ctx.revert();
   }, []);
 
-  // Mouse follow effect
+  // Mouse follow glow
   useEffect(() => {
     const cursor = document.getElementById('cursor-glow');
     if (!cursor) return;
     const onMove = (e: MouseEvent) => {
-      cursor.style.transform = `translate(${e.clientX - 150}px, ${e.clientY - 150}px)`;
+      gsap.to(cursor, { x: e.clientX - 150, y: e.clientY - 150, duration: 0.8, ease: 'power3.out' });
     };
     window.addEventListener('mousemove', onMove);
     return () => window.removeEventListener('mousemove', onMove);
@@ -224,23 +233,23 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background overflow-hidden relative">
       {/* Mouse follow glow */}
-      <div id="cursor-glow" className="pointer-events-none fixed w-[300px] h-[300px] rounded-full opacity-[0.04] blur-3xl transition-transform duration-300 ease-out z-0"
+      <div id="cursor-glow" className="pointer-events-none fixed w-[300px] h-[300px] rounded-full opacity-[0.04] blur-3xl z-0"
         style={{ background: 'radial-gradient(circle, hsl(var(--primary)), transparent)' }} />
 
       {/* Grid Background */}
-      <div className="pointer-events-none fixed inset-0 opacity-[0.08]" style={{
+      <div className="pointer-events-none fixed inset-0 opacity-[0.06]" style={{
         backgroundImage: 'linear-gradient(hsl(var(--border) / 0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px)',
-        backgroundSize: '50px 50px', maskImage: 'radial-gradient(circle at center, black 20%, transparent 80%)',
+        backgroundSize: '60px 60px', maskImage: 'radial-gradient(circle at center, black 20%, transparent 80%)',
       }} />
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-[600px]" style={{ background: 'linear-gradient(180deg, hsl(var(--primary) / 0.08), transparent)' }} />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-[700px]" style={{ background: 'linear-gradient(180deg, hsl(var(--primary) / 0.1), transparent)' }} />
 
-      {/* Floating orbs with 3D feel */}
-      <motion.div animate={{ y: [0, -30, 0], x: [0, 15, 0], scale: [1, 1.1, 1] }} transition={{ duration: 10, repeat: Infinity }} className="pointer-events-none fixed top-20 left-[5%] w-72 h-72 rounded-full opacity-[0.06]" style={{ background: 'radial-gradient(circle, hsl(var(--primary)), transparent)' }} />
-      <motion.div animate={{ y: [0, 25, 0], x: [0, -20, 0] }} transition={{ duration: 12, repeat: Infinity }} className="pointer-events-none fixed top-[40%] right-[10%] w-56 h-56 rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, hsl(25 95% 60%), transparent)' }} />
-      <motion.div animate={{ y: [0, -15, 0], x: [0, 10, 0] }} transition={{ duration: 8, repeat: Infinity }} className="pointer-events-none fixed bottom-[20%] left-[20%] w-40 h-40 rounded-full opacity-[0.05]" style={{ background: 'radial-gradient(circle, hsl(var(--accent)), transparent)' }} />
+      {/* Floating orbs with 3D depth */}
+      <motion.div animate={{ y: [0, -30, 0], x: [0, 15, 0], scale: [1, 1.15, 1] }} transition={{ duration: 10, repeat: Infinity }} className="pointer-events-none fixed top-20 left-[5%] w-80 h-80 rounded-full opacity-[0.07]" style={{ background: 'radial-gradient(circle, hsl(var(--primary)), transparent)' }} />
+      <motion.div animate={{ y: [0, 25, 0], x: [0, -20, 0] }} transition={{ duration: 12, repeat: Infinity }} className="pointer-events-none fixed top-[40%] right-[10%] w-64 h-64 rounded-full opacity-[0.05]" style={{ background: 'radial-gradient(circle, hsl(25 95% 60%), transparent)' }} />
+      <motion.div animate={{ y: [0, -20, 0], x: [0, 12, 0] }} transition={{ duration: 8, repeat: Infinity }} className="pointer-events-none fixed bottom-[20%] left-[20%] w-48 h-48 rounded-full opacity-[0.06]" style={{ background: 'radial-gradient(circle, hsl(var(--accent)), transparent)' }} />
 
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 backdrop-blur-2xl bg-background/70 border-b border-border/30">
+      <nav className="sticky top-0 z-50 backdrop-blur-2xl bg-background/60 border-b border-border/20">
         <div className="flex items-center justify-between px-4 md:px-8 py-3 max-w-7xl mx-auto">
           <div className="flex items-center gap-2">
             <motion.div whileHover={{ rotate: 15, scale: 1.1 }} className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/20">
@@ -350,20 +359,19 @@ const Index = () => {
           <div className="text-center space-y-3">
             <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Mobile App</span>
             <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Everything on Your Phone</h2>
-            <p className="text-sm text-muted-foreground max-w-lg mx-auto">Manage your entire business from your pocket — billing, products, customers, and store management</p>
+            <p className="text-sm text-muted-foreground max-w-lg mx-auto">Manage your entire business from your pocket</p>
           </div>
           <div className="flex gap-4 md:gap-6 overflow-x-auto no-scrollbar px-4 -mx-4 pb-8 snap-x snap-mandatory">
             {appScreenshots.map((screen, i) => (
               <motion.div key={screen.label}
                 className="app-phone shrink-0 snap-center group"
-                whileHover={{ y: -12, rotateY: 5 }}
+                whileHover={{ y: -16, rotateY: 8 }}
                 style={{ perspective: '1000px' }}>
                 <div className="w-[240px] md:w-[280px] rounded-[2rem] overflow-hidden border-[5px] border-foreground/10 shadow-2xl bg-card relative">
                   <div className="h-6 bg-foreground/5 flex items-center justify-center">
                     <div className="w-12 h-1.5 rounded-full bg-foreground/10" />
                   </div>
                   <img src={screen.src} alt={screen.label} className="w-full" loading="lazy" />
-                  {/* Overlay on hover */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-5">
                     <div>
                       <p className="text-white text-sm font-bold">{screen.label}</p>
@@ -402,14 +410,14 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Features Grid with stagger */}
+        {/* Features Grid */}
         <section id="features" className="gsap-blur-in py-16 md:py-24 space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Powerful Tools</span>
             <h2 className="text-reveal text-3xl md:text-5xl font-bold font-display text-foreground">Everything You Need</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map((f, i) => {
+            {features.map((f) => {
               const Icon = f.icon;
               return (
                 <motion.div key={f.title}
@@ -458,7 +466,6 @@ const Index = () => {
           backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }} />
-        {/* Gooey overlay effect */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[20%] left-[10%] w-40 h-40 rounded-full opacity-[0.05] blur-3xl animate-pulse" style={{ background: 'hsl(var(--primary))' }} />
           <div className="absolute bottom-[20%] right-[15%] w-56 h-56 rounded-full opacity-[0.04] blur-3xl animate-pulse" style={{ background: 'hsl(25 95% 60%)', animationDelay: '2s' }} />
@@ -469,7 +476,7 @@ const Index = () => {
             <h2 className="text-3xl md:text-6xl font-bold font-display text-foreground mt-3 leading-[1.1]">Built for<br /><span className="gradient-primary-text">Indian Businesses</span></h2>
             <p className="text-sm text-muted-foreground mt-4 max-w-sm">Scroll to explore the powerful features that make ZEN POS the #1 choice for store owners across India.</p>
           </div>
-          {horizontalCards.map((f, i) => {
+          {horizontalCards.map((f) => {
             const Icon = f.icon;
             return (
               <div key={f.title} className="min-w-[300px] md:min-w-[380px] shrink-0 rounded-3xl glass-card shadow-elevated p-0 overflow-hidden hover:scale-[1.03] transition-all duration-500 group border border-border/30">
@@ -508,7 +515,7 @@ const Index = () => {
             {testimonials.map((t, i) => (
               <motion.div key={t.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }} whileHover={{ y: -4 }}
-                className="feature-card rounded-2xl glass-card shadow-soft p-6 space-y-3 hover:shadow-elevated transition-all border border-border/30">
+                className="testimonial-card rounded-2xl glass-card shadow-soft p-6 space-y-3 hover:shadow-elevated transition-all border border-border/30">
                 <div className="flex gap-0.5">{[...Array(5)].map((_, j) => <Star key={j} className="w-3.5 h-3.5 text-warning fill-warning" />)}</div>
                 <p className="text-sm text-foreground italic leading-relaxed">"{t.text}"</p>
                 <div className="flex items-center gap-3">
@@ -539,7 +546,7 @@ const Index = () => {
                 const isPopular = i === 1 && plans.length > 1;
                 return (
                   <motion.div key={plan.id} whileHover={{ y: -8, scale: 1.02 }}
-                    className={`feature-card rounded-3xl glass-card p-7 space-y-5 relative overflow-hidden transition-all ${isPopular ? 'shadow-elevated border-2 border-primary/40 ring-2 ring-primary/10' : 'shadow-soft border border-border/50'}`}>
+                    className={`pricing-card rounded-3xl glass-card p-7 space-y-5 relative overflow-hidden transition-all ${isPopular ? 'shadow-elevated border-2 border-primary/40 ring-2 ring-primary/10' : 'shadow-soft border border-border/50'}`}>
                     {isPopular && <div className="absolute top-0 inset-x-0 h-1.5 gradient-primary" />}
                     {isPopular && (
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
@@ -572,7 +579,7 @@ const Index = () => {
           ) : (
             <div className="max-w-md mx-auto">
               <motion.div whileHover={{ y: -6 }}
-                className="rounded-3xl glass-card shadow-elevated p-8 space-y-5 border-2 border-primary/20 relative overflow-hidden">
+                className="pricing-card rounded-3xl glass-card shadow-elevated p-8 space-y-5 border-2 border-primary/20 relative overflow-hidden">
                 <div className="absolute top-0 inset-x-0 h-1.5 gradient-primary" />
                 <div className="text-center space-y-1">
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-bold mb-2"><Award className="w-3 h-3" /> Best Value</span>
@@ -689,7 +696,6 @@ const Index = () => {
                 <span className="text-base font-bold font-display text-foreground">ZEN POS</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">The smartest B2B SaaS POS system for every Indian business.</p>
-              {/* Android Download */}
               {apkUrl && (
                 <motion.a href={apkUrl} download whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-xs font-bold shadow-lg group">

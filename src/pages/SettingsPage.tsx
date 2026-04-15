@@ -14,7 +14,7 @@ import { DASHBOARD_THEMES, type DashboardThemeKey, PRINTER_BRANDS } from '@/lib/
 import { getCategoryConfig } from '@/lib/categoryConfig';
 import { useLanguage } from '@/hooks/useLanguage';
 
-type SettingsPanel = 'business' | 'printer' | 'theme' | 'profile' | 'notifications' | 'security' | 'language' | 'store_design' | 'reviews' | 'backup' | null;
+type SettingsPanel = 'business' | 'printer' | 'theme' | 'profile' | 'notifications' | 'security' | 'language' | 'store_design' | 'reviews' | 'backup' | 'accounts' | null;
 
 const SettingsPage = () => {
   const { signOut, user, isAdmin } = useAuth();
