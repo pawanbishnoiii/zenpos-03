@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Store, Printer, Palette, User, Bell, Shield, Globe, LogOut, Tag, Users, Loader2, Link2, Save, ExternalLink, Check, X, Copy, Bluetooth, Wifi, Usb, Paintbrush, Star, MessageSquare, Moon, Sun, Clock, ChevronRight, Settings, Receipt, TrendingDown, CreditCard, BarChart3, Download, Upload, Database } from 'lucide-react';
 import LottieAnimation from '@/components/common/LottieAnimation';
 import BackupPanel from '@/components/settings/BackupPanel';
+import AccountsPanel from '@/components/settings/AccountsPanel';
 import PageHeader from '@/components/layout/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { useBusiness } from '@/hooks/useBusiness';
@@ -14,7 +15,7 @@ import { DASHBOARD_THEMES, type DashboardThemeKey, PRINTER_BRANDS } from '@/lib/
 import { getCategoryConfig } from '@/lib/categoryConfig';
 import { useLanguage } from '@/hooks/useLanguage';
 
-type SettingsPanel = 'business' | 'printer' | 'theme' | 'profile' | 'notifications' | 'security' | 'language' | 'store_design' | 'reviews' | 'backup' | null;
+type SettingsPanel = 'business' | 'printer' | 'theme' | 'profile' | 'notifications' | 'security' | 'language' | 'store_design' | 'reviews' | 'backup' | 'accounts' | null;
 
 const SettingsPage = () => {
   const { signOut, user, isAdmin } = useAuth();
@@ -184,6 +185,7 @@ const SettingsPage = () => {
         title: language === 'hi' ? 'खाता' : 'ACCOUNT',
         items: [
           { key: 'profile' as SettingsPanel, icon: User, label: 'Profile', desc: user?.email || 'Name & contact' },
+          { key: 'accounts' as SettingsPanel, icon: CreditCard, label: 'Accounts & Subscription', desc: 'Plan, billing & usage' },
           { key: 'language' as SettingsPanel, icon: Globe, label: language === 'hi' ? 'भाषा' : 'Language', desc: language === 'hi' ? 'हिंदी' : 'English' },
           { key: 'notifications' as SettingsPanel, icon: Bell, label: t('notifications.title'), desc: 'Alerts & updates' },
           { key: 'security' as SettingsPanel, icon: Shield, label: 'Security', desc: 'Sessions & login' },
@@ -214,7 +216,7 @@ const SettingsPage = () => {
       </div>
     );
 
-    const panelTitle = activePanel === 'business' ? 'Business Profile' : activePanel === 'printer' ? 'Printer & Devices' : activePanel === 'profile' ? 'Profile' : activePanel === 'theme' ? 'Dashboard Theme' : activePanel === 'reviews' ? 'Manage Reviews' : activePanel === 'notifications' ? t('notifications.title') : activePanel === 'security' ? 'Security' : activePanel === 'language' ? (language === 'hi' ? 'भाषा चुनें' : 'Language') : activePanel === 'backup' ? 'Backup & Restore' : 'Settings';
+    const panelTitle = activePanel === 'business' ? 'Business Profile' : activePanel === 'printer' ? 'Printer & Devices' : activePanel === 'profile' ? 'Profile' : activePanel === 'theme' ? 'Dashboard Theme' : activePanel === 'reviews' ? 'Manage Reviews' : activePanel === 'notifications' ? t('notifications.title') : activePanel === 'security' ? 'Security' : activePanel === 'language' ? (language === 'hi' ? 'भाषा चुनें' : 'Language') : activePanel === 'backup' ? 'Backup & Restore' : activePanel === 'accounts' ? 'Accounts & Subscription' : 'Settings';
 
     return (
       <div className="flex-1 overflow-y-auto p-6">
@@ -421,6 +423,11 @@ const SettingsPage = () => {
         </div>
       </div>
     );
+    if (activePanel === 'accounts') {
+      return (
+        <AccountsPanel business={business} user={user} />
+      );
+    }
     if (activePanel === 'backup') return (
       <BackupPanel business={business} toast={toast} />
     );
@@ -565,7 +572,7 @@ const SettingsPage = () => {
               <ChevronRight className="w-4 h-4 rotate-180" /> Back to Settings
             </button>
             <h2 className="text-xl font-bold text-foreground mb-4">
-              {activePanel === 'business' ? 'Business Profile' : activePanel === 'printer' ? 'Printer & Devices' : activePanel === 'profile' ? 'Profile' : activePanel === 'theme' ? 'Dashboard Theme' : activePanel === 'reviews' ? 'Reviews' : activePanel === 'notifications' ? t('notifications.title') : activePanel === 'security' ? 'Security' : activePanel === 'language' ? 'Language' : activePanel === 'backup' ? 'Backup & Restore' : 'Settings'}
+              {activePanel === 'business' ? 'Business Profile' : activePanel === 'printer' ? 'Printer & Devices' : activePanel === 'profile' ? 'Profile' : activePanel === 'theme' ? 'Dashboard Theme' : activePanel === 'reviews' ? 'Reviews' : activePanel === 'notifications' ? t('notifications.title') : activePanel === 'security' ? 'Security' : activePanel === 'language' ? 'Language' : activePanel === 'backup' ? 'Backup & Restore' : activePanel === 'accounts' ? 'Accounts & Subscription' : 'Settings'}
             </h2>
             {renderPanelContent()}
           </div>
