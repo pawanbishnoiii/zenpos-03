@@ -572,7 +572,7 @@ const SettingsPage = () => {
               <ChevronRight className="w-4 h-4 rotate-180" /> Back to Settings
             </button>
             <h2 className="text-xl font-bold text-foreground mb-4">
-              {activePanel === 'business' ? 'Business Profile' : activePanel === 'printer' ? 'Printer & Devices' : activePanel === 'profile' ? 'Profile' : activePanel === 'theme' ? 'Dashboard Theme' : activePanel === 'reviews' ? 'Reviews' : activePanel === 'notifications' ? t('notifications.title') : activePanel === 'security' ? 'Security' : activePanel === 'language' ? 'Language' : activePanel === 'backup' ? 'Backup & Restore' : 'Settings'}
+              {activePanel === 'business' ? 'Business Profile' : activePanel === 'printer' ? 'Printer & Devices' : activePanel === 'profile' ? 'Profile' : activePanel === 'theme' ? 'Dashboard Theme' : activePanel === 'reviews' ? 'Reviews' : activePanel === 'notifications' ? t('notifications.title') : activePanel === 'security' ? 'Security' : activePanel === 'language' ? 'Language' : activePanel === 'backup' ? 'Backup & Restore' : activePanel === 'accounts' ? 'Accounts & Subscription' : 'Settings'}
             </h2>
             {renderPanelContent()}
           </div>
