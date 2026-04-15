@@ -422,6 +422,11 @@ const SettingsPage = () => {
         </div>
       </div>
     );
+    if (activePanel === 'accounts') {
+      return (
+        <AccountsPanel business={business} user={user} />
+      );
+    }
     if (activePanel === 'backup') return (
       <BackupPanel business={business} toast={toast} />
     );
