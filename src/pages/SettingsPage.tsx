@@ -184,6 +184,7 @@ const SettingsPage = () => {
         title: language === 'hi' ? 'खाता' : 'ACCOUNT',
         items: [
           { key: 'profile' as SettingsPanel, icon: User, label: 'Profile', desc: user?.email || 'Name & contact' },
+          { key: 'accounts' as SettingsPanel, icon: CreditCard, label: 'Accounts & Subscription', desc: 'Plan, billing & usage' },
           { key: 'language' as SettingsPanel, icon: Globe, label: language === 'hi' ? 'भाषा' : 'Language', desc: language === 'hi' ? 'हिंदी' : 'English' },
           { key: 'notifications' as SettingsPanel, icon: Bell, label: t('notifications.title'), desc: 'Alerts & updates' },
           { key: 'security' as SettingsPanel, icon: Shield, label: 'Security', desc: 'Sessions & login' },
@@ -214,7 +215,7 @@ const SettingsPage = () => {
       </div>
     );
 
-    const panelTitle = activePanel === 'business' ? 'Business Profile' : activePanel === 'printer' ? 'Printer & Devices' : activePanel === 'profile' ? 'Profile' : activePanel === 'theme' ? 'Dashboard Theme' : activePanel === 'reviews' ? 'Manage Reviews' : activePanel === 'notifications' ? t('notifications.title') : activePanel === 'security' ? 'Security' : activePanel === 'language' ? (language === 'hi' ? 'भाषा चुनें' : 'Language') : activePanel === 'backup' ? 'Backup & Restore' : 'Settings';
+    const panelTitle = activePanel === 'business' ? 'Business Profile' : activePanel === 'printer' ? 'Printer & Devices' : activePanel === 'profile' ? 'Profile' : activePanel === 'theme' ? 'Dashboard Theme' : activePanel === 'reviews' ? 'Manage Reviews' : activePanel === 'notifications' ? t('notifications.title') : activePanel === 'security' ? 'Security' : activePanel === 'language' ? (language === 'hi' ? 'भाषा चुनें' : 'Language') : activePanel === 'backup' ? 'Backup & Restore' : activePanel === 'accounts' ? 'Accounts & Subscription' : 'Settings';
 
     return (
       <div className="flex-1 overflow-y-auto p-6">
