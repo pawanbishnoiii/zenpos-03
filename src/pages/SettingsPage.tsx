@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Store, Printer, Palette, User, Bell, Shield, Globe, LogOut, Tag, Users, Loader2, Link2, Save, ExternalLink, Check, X, Copy, Bluetooth, Wifi, Usb, Paintbrush, Star, MessageSquare, Moon, Sun, Clock, ChevronRight, Settings, Receipt, TrendingDown, CreditCard, BarChart3, Download, Upload, Database } from 'lucide-react';
 import LottieAnimation from '@/components/common/LottieAnimation';
 import BackupPanel from '@/components/settings/BackupPanel';
+import AccountsPanel from '@/components/settings/AccountsPanel';
 import PageHeader from '@/components/layout/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { useBusiness } from '@/hooks/useBusiness';
