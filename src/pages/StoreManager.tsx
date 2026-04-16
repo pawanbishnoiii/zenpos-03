@@ -644,9 +644,17 @@ const StoreManager = () => {
                     <p className="text-sm font-bold text-foreground truncate">{h.customer_name}</p>
                     {h.title && <p className="text-[10px] text-primary font-medium">{h.title}</p>}
                     {h.vehicle_info && <p className="text-[10px] text-muted-foreground">{h.vehicle_info}</p>}
-                    <button onClick={() => handleDeleteHappy(h.id)} className="mt-1 text-[10px] text-destructive font-semibold hover:underline flex items-center gap-1">
-                      <Trash2 className="w-3 h-3" /> Remove
-                    </button>
+                    <div className="flex gap-2 mt-1">
+                      <button onClick={() => {
+                        setHappyName(h.customer_name); setHappyTitle(h.title || ''); setHappyVehicle(h.vehicle_info || '');
+                        handleDeleteHappy(h.id);
+                      }} className="text-[10px] text-primary font-semibold hover:underline flex items-center gap-1">
+                        <Pencil className="w-3 h-3" /> Edit
+                      </button>
+                      <button onClick={() => handleDeleteHappy(h.id)} className="text-[10px] text-destructive font-semibold hover:underline flex items-center gap-1">
+                        <Trash2 className="w-3 h-3" /> Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
