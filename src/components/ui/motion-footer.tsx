@@ -199,13 +199,28 @@ export function MotionFooter({ business, theme, className }: MotionFooterProps) 
         </div>
 
         {/* Map */}
-        {business?.google_map_url && (
+        {business?.google_map_url && business.google_map_url.trim() !== '' && (
           <div className="mb-12 rounded-3xl overflow-hidden border border-white/5">
             {(() => {
-              const url = business.google_map_url;
-              const isEmbed = url.includes('/embed') || url.includes('output=embed');
-              const embedUrl = isEmbed ? url : url.includes('google.com/maps') ? `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000!2d0!3d0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1&q=${encodeURIComponent(url)}` : null;
-              if (embedUrl && isEmbed) return <iframe src={embedUrl} width="100%" height="250" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Location" />;
+              const url = business.google_map_url.trim();
+              // Check if it's already an embed URL
+              const isEmbed = url.includes('/embed') || url.includes('output=embed') || url.includes('maps/embed');
+              // Check if it's a place URL we can convert
+              const isGoogleMaps = url.includes('google.com/maps') || url.includes('goo.gl/maps') || url.includes('maps.app.goo.gl');
+              
+              if (isEmbed) {
+                return <iframe src={url} width="100%" height="250" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Location" />;
+              }
+              if (isGoogleMaps) {
+                // Convert place/search URL to embed
+                const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(url)}&output=embed`;
+                return <iframe src={embedUrl} width="100%" height="250" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Location" />;
+              }
+              // Try treating it as an address/place name
+              if (url.length > 3) {
+                const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(url)}&output=embed`;
+                return <iframe src={embedUrl} width="100%" height="250" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Location" />;
+              }
               return (
                 <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-8 bg-white/[0.03] hover:bg-white/[0.06] transition-colors">
                   <MapPin className="w-5 h-5 text-primary" />
