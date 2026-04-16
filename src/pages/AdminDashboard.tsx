@@ -60,7 +60,8 @@ const AdminDashboard = () => {
   const [apkSettings, setApkSettings] = useState<any>(null);
   const [apkFile, setApkFile] = useState<File | null>(null);
   const [savingApk, setSavingApk] = useState(false);
-  const [apkForm, setApkForm] = useState({ version: '1.0.0', push_notification_key: '' });
+  const [apkUploadProgress, setApkUploadProgress] = useState(0);
+  const [apkForm, setApkForm] = useState({ version: '1.0.0', push_notification_key: '', description: '' });
   // Backup import
   const [importing, setImporting] = useState(false);
 
@@ -153,7 +154,7 @@ const AdminDashboard = () => {
     const { data } = await supabase.from('admin_apk_settings').select('*').limit(1).maybeSingle();
     if (data) {
       setApkSettings(data);
-      setApkForm({ version: data.version || '1.0.0', push_notification_key: data.push_notification_key || '' });
+      setApkForm({ version: data.version || '1.0.0', push_notification_key: data.push_notification_key || '', description: '' });
     }
   };
 
@@ -266,14 +267,28 @@ const AdminDashboard = () => {
     setShowPlanForm(true);
   };
 
-  // APK upload
+  // APK upload with progress
   const handleSaveApk = async () => {
     setSavingApk(true);
+    setApkUploadProgress(0);
     let apkUrl = apkSettings?.apk_url || '';
     if (apkFile) {
       const path = `apk/zenpos-${apkForm.version}.apk`;
+      // Simulate progress since supabase SDK doesn't expose upload progress
+      const progressInterval = setInterval(() => {
+        setApkUploadProgress(prev => Math.min(prev + Math.random() * 15, 90));
+      }, 300);
       const { error } = await supabase.storage.from('store-media').upload(path, apkFile, { cacheControl: '3600', upsert: true });
-      if (!error) apkUrl = supabase.storage.from('store-media').getPublicUrl(path).data.publicUrl;
+      clearInterval(progressInterval);
+      if (!error) {
+        setApkUploadProgress(95);
+        apkUrl = supabase.storage.from('store-media').getPublicUrl(path).data.publicUrl;
+      } else {
+        toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+        setSavingApk(false);
+        setApkUploadProgress(0);
+        return;
+      }
     }
     const payload = { apk_url: apkUrl, version: apkForm.version, push_notification_key: apkForm.push_notification_key, updated_at: new Date().toISOString() };
     let error;
@@ -284,9 +299,10 @@ const AdminDashboard = () => {
       error = res.error;
       if (res.data) setApkSettings(res.data);
     }
+    setApkUploadProgress(100);
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
     else { toast({ title: 'APK settings saved!' }); fetchApkSettings(); }
-    setSavingApk(false);
+    setTimeout(() => { setSavingApk(false); setApkUploadProgress(0); }, 500);
   };
 
   // Platform import
