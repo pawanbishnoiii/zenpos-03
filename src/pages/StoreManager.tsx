@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Palette, Image, FileText, Star, Search as SearchIcon, Globe, Upload, Trash2, Eye, EyeOff, Save, Loader2, ExternalLink, Video, Plus, GripVertical, MessageSquare, Check, X, Tag, ShoppingBag, Layout, Navigation, Receipt, Users, MapPin, Phone, Instagram, Youtube, Facebook, LinkIcon, Type, PaintBucket, Smartphone, Monitor, ChevronDown, Heart, Code, Layers } from 'lucide-react';
+import { ArrowLeft, Palette, Image, FileText, Star, Search as SearchIcon, Globe, Upload, Trash2, Eye, EyeOff, Save, Loader2, ExternalLink, Video, Plus, GripVertical, MessageSquare, Check, X, Tag, ShoppingBag, Layout, Navigation, Receipt, Users, MapPin, Phone, Instagram, Youtube, Facebook, LinkIcon, Type, PaintBucket, Smartphone, Monitor, ChevronDown, Heart, Code, Layers, Pencil } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import { useBusiness } from '@/hooks/useBusiness';
 import { supabase } from '@/integrations/supabase/client';
