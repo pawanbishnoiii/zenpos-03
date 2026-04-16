@@ -26,6 +26,7 @@ import StoreManager from "@/pages/StoreManager";
 import ExpenseTracker from "@/pages/ExpenseTracker";
 import CreditLedger from "@/pages/CreditLedger";
 import NotFound from "./pages/NotFound";
+import AppDownload from "./pages/AppDownload";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/landing" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/store/:slug" element={<StorePage />} />
+              <Route path="/app" element={<AppDownload />} />
               <Route path="/onboarding" element={<ProtectedRoute><AppLayout><Onboarding /></AppLayout></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute requireBusiness><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
               <Route path="/workspace" element={<ProtectedRoute requireBusiness><AppLayout><Workspace /></AppLayout></ProtectedRoute>} />

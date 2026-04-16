@@ -104,8 +104,10 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
   };
 
   const handleWhatsAppBooking = () => {
-    const msg = `🔧 *Service Booking Request*%0A%0A📅 Date: ${bookingDate}%0A⏰ Time: ${bookingTime}%0A🚗 Service: ${bookingService || 'General Service'}%0A🏪 Store: ${business.business_name}`;
-    window.open(`https://wa.me/${business.whatsapp_number || business.phone}?text=${msg}`, '_blank');
+    const phone = (business.whatsapp_number || business.phone || '').replace(/\D/g, '');
+    if (!phone) return;
+    const msg = encodeURIComponent(`🔧 *Service Booking Request*\n\n📅 Date: ${bookingDate}\n⏰ Time: ${bookingTime}\n🚗 Service: ${bookingService || 'General Service'}\n🏪 Store: ${business.business_name}`);
+    window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
   };
 
   const trustBadges = [
@@ -410,8 +412,16 @@ const AutoServiceTheme = ({ business, products, reviews, banners, offers, videos
             <h2 className="text-3xl font-black text-white">Our Location</h2>
           </div>
           <div className="rounded-3xl overflow-hidden border border-slate-700/50 shadow-xl">
-            <iframe src={business.google_map_url} width="100%" height="350" style={{ border: 0 }}
-              allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Location" />
+            {business.google_map_url.includes('/embed') || business.google_map_url.includes('output=embed') ? (
+              <iframe src={business.google_map_url} width="100%" height="350" style={{ border: 0 }}
+                allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Location" />
+            ) : (
+              <a href={business.google_map_url} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 py-12 bg-slate-800/50 hover:bg-slate-800 transition-colors">
+                <MapPin className="w-6 h-6 text-cyan-400" />
+                <span className="text-sm font-bold text-white/70 hover:text-white">View on Google Maps →</span>
+              </a>
+            )}
           </div>
         </section>
       )}
