@@ -60,7 +60,8 @@ const AdminDashboard = () => {
   const [apkSettings, setApkSettings] = useState<any>(null);
   const [apkFile, setApkFile] = useState<File | null>(null);
   const [savingApk, setSavingApk] = useState(false);
-  const [apkForm, setApkForm] = useState({ version: '1.0.0', push_notification_key: '' });
+  const [apkUploadProgress, setApkUploadProgress] = useState(0);
+  const [apkForm, setApkForm] = useState({ version: '1.0.0', push_notification_key: '', description: '' });
   // Backup import
   const [importing, setImporting] = useState(false);
 
@@ -153,7 +154,7 @@ const AdminDashboard = () => {
     const { data } = await supabase.from('admin_apk_settings').select('*').limit(1).maybeSingle();
     if (data) {
       setApkSettings(data);
-      setApkForm({ version: data.version || '1.0.0', push_notification_key: data.push_notification_key || '' });
+      setApkForm({ version: data.version || '1.0.0', push_notification_key: data.push_notification_key || '', description: '' });
     }
   };
 
@@ -266,14 +267,28 @@ const AdminDashboard = () => {
     setShowPlanForm(true);
   };
 
-  // APK upload
+  // APK upload with progress
   const handleSaveApk = async () => {
     setSavingApk(true);
+    setApkUploadProgress(0);
     let apkUrl = apkSettings?.apk_url || '';
     if (apkFile) {
       const path = `apk/zenpos-${apkForm.version}.apk`;
+      // Simulate progress since supabase SDK doesn't expose upload progress
+      const progressInterval = setInterval(() => {
+        setApkUploadProgress(prev => Math.min(prev + Math.random() * 15, 90));
+      }, 300);
       const { error } = await supabase.storage.from('store-media').upload(path, apkFile, { cacheControl: '3600', upsert: true });
-      if (!error) apkUrl = supabase.storage.from('store-media').getPublicUrl(path).data.publicUrl;
+      clearInterval(progressInterval);
+      if (!error) {
+        setApkUploadProgress(95);
+        apkUrl = supabase.storage.from('store-media').getPublicUrl(path).data.publicUrl;
+      } else {
+        toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+        setSavingApk(false);
+        setApkUploadProgress(0);
+        return;
+      }
     }
     const payload = { apk_url: apkUrl, version: apkForm.version, push_notification_key: apkForm.push_notification_key, updated_at: new Date().toISOString() };
     let error;
@@ -284,9 +299,10 @@ const AdminDashboard = () => {
       error = res.error;
       if (res.data) setApkSettings(res.data);
     }
+    setApkUploadProgress(100);
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
     else { toast({ title: 'APK settings saved!' }); fetchApkSettings(); }
-    setSavingApk(false);
+    setTimeout(() => { setSavingApk(false); setApkUploadProgress(0); }, 500);
   };
 
   // Platform import
@@ -765,19 +781,42 @@ const AdminDashboard = () => {
                   className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Upload APK File</label>
-              <input type="file" accept=".apk" onChange={e => setApkFile(e.target.files?.[0] || null)}
-                className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground" />
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Release Notes / Description</label>
+              <textarea placeholder="What's new in this version..." value={apkForm.description} onChange={e => setApkForm(f => ({ ...f, description: e.target.value }))} rows={3}
+                className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
             </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Upload APK File</label>
+              <div className="relative">
+                <input type="file" accept=".apk" onChange={e => { setApkFile(e.target.files?.[0] || null); setApkUploadProgress(0); }}
+                  className="w-full px-3 py-2.5 rounded-xl bg-background border border-border text-sm text-foreground" />
+                {apkFile && <p className="text-[10px] text-primary mt-1 font-medium">📦 {apkFile.name} ({(apkFile.size / 1024 / 1024).toFixed(1)} MB)</p>}
+              </div>
+            </div>
+            {/* Progress Bar */}
+            {savingApk && apkUploadProgress > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground font-medium">Uploading APK...</p>
+                  <p className="text-xs font-bold text-primary">{Math.round(apkUploadProgress)}%</p>
+                </div>
+                <div className="h-2.5 w-full bg-secondary rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${apkUploadProgress}%` }}
+                    transition={{ duration: 0.3 }}
+                    className="h-full rounded-full gradient-primary" />
+                </div>
+              </div>
+            )}
             {apkSettings?.apk_url && (
               <div className="rounded-xl bg-success/5 border border-success/20 p-3">
                 <p className="text-xs text-success font-medium">✅ Current APK: v{apkSettings.version}</p>
                 <p className="text-[10px] text-muted-foreground mt-1 truncate">{apkSettings.apk_url}</p>
+                <p className="text-[10px] text-muted-foreground">Updated: {new Date(apkSettings.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
               </div>
             )}
             <button onClick={handleSaveApk} disabled={savingApk}
               className="px-6 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 disabled:opacity-50">
-              {savingApk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Save APK Settings
+              {savingApk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} {savingApk ? 'Uploading...' : 'Save APK Settings'}
             </button>
           </div>
         </div>

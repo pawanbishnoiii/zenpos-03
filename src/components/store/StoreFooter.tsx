@@ -103,14 +103,18 @@ const StoreFooter = ({ business, theme }: StoreFooterProps) => {
         </div>
 
         {/* Google Map */}
-        {hasMap && (
+        {hasMap && business.google_map_url.trim() !== '' && (
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
             className="mb-8 rounded-2xl overflow-hidden border border-white/10">
-            <iframe
-              src={business.google_map_url}
-              width="100%" height="220" style={{ border: 0 }} allowFullScreen loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade" title="Store Location"
-            />
+            {(() => {
+              const url = business.google_map_url.trim();
+              const isEmbed = url.includes('/embed') || url.includes('output=embed') || url.includes('maps/embed');
+              if (isEmbed) {
+                return <iframe src={url} width="100%" height="220" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Store Location" />;
+              }
+              const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(url)}&output=embed`;
+              return <iframe src={embedUrl} width="100%" height="220" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Store Location" />;
+            })()}
           </motion.div>
         )}
 
