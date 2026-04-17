@@ -111,112 +111,87 @@ const Index = () => {
   // GSAP Animations - Full Production
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Hero - split text reveal with stagger
-      gsap.from('.hero-title', {
-        y: 120, opacity: 0, duration: 1.6, ease: 'expo.out', delay: 0.2,
-        clipPath: 'inset(0 0 100% 0)',
-        onComplete: function() { gsap.set('.hero-title', { clipPath: 'none' }); }
-      });
+      // Hero
+      gsap.from('.hero-title', { y: 120, opacity: 0, duration: 1.6, ease: 'expo.out', delay: 0.2 });
       gsap.from('.hero-subtitle', { y: 60, opacity: 0, filter: 'blur(10px)', duration: 1.2, ease: 'power3.out', delay: 0.7 });
       gsap.from('.hero-cta', { scale: 0.3, opacity: 0, duration: 1, ease: 'back.out(1.7)', delay: 1.1 });
       gsap.from('.hero-stats > *', { y: 40, opacity: 0, scale: 0.8, stagger: 0.12, duration: 0.7, ease: 'power3.out', delay: 1.4 });
 
-      // Scroll-triggered reveals with clipPath
+      // fromTo guarantees end-state visible even if trigger never fires
       gsap.utils.toArray<HTMLElement>('.gsap-reveal').forEach(el => {
-        gsap.from(el, {
-          y: 80, opacity: 0, duration: 1, ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
-        });
+        gsap.fromTo(el, { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none', once: true } });
       });
 
-      // Blur + slide transitions between sections
       gsap.utils.toArray<HTMLElement>('.gsap-blur-in').forEach(el => {
-        gsap.from(el, {
-          filter: 'blur(20px)', opacity: 0, y: 60, duration: 1.4, ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 80%' }
-        });
+        gsap.fromTo(el, { filter: 'blur(20px)', opacity: 0, y: 60 },
+          { filter: 'blur(0px)', opacity: 1, y: 0, duration: 1.2, ease: 'power3.out',
+            scrollTrigger: { trigger: el, start: 'top 90%', once: true } });
       });
 
-      // Parallax dashboard preview
       if (dashboardRef.current) {
-        gsap.to('.dashboard-desktop', {
-          y: -80, ease: 'none',
-          scrollTrigger: { trigger: dashboardRef.current, start: 'top bottom', end: 'bottom top', scrub: 1 }
-        });
-        gsap.to('.dashboard-mobile', {
-          y: -120, ease: 'none',
-          scrollTrigger: { trigger: dashboardRef.current, start: 'top bottom', end: 'bottom top', scrub: 1 }
-        });
+        gsap.to('.dashboard-desktop', { y: -60, ease: 'none',
+          scrollTrigger: { trigger: dashboardRef.current, start: 'top bottom', end: 'bottom top', scrub: 1 } });
+        gsap.to('.dashboard-mobile', { y: -100, ease: 'none',
+          scrollTrigger: { trigger: dashboardRef.current, start: 'top bottom', end: 'bottom top', scrub: 1 } });
       }
 
-      // Horizontal scroll - title rises then cards scroll right with speed variation
-      if (horizontalRef.current && horizontalTrackRef.current) {
+      // Horizontal scroll - desktop only
+      if (horizontalRef.current && horizontalTrackRef.current && window.innerWidth >= 768) {
         const track = horizontalTrackRef.current;
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: horizontalRef.current,
-            start: 'top top',
-            end: () => `+=${track.scrollWidth - window.innerWidth + 600}`,
-            scrub: 1,
-            pin: true,
-            anticipatePin: 1,
-          }
-        });
-
-        // Title rises from bottom with blur
-        tl.from('.horizontal-title', { y: 150, opacity: 0, filter: 'blur(15px)', duration: 0.3, ease: 'power3.out' });
-        // Cards scroll right with eased motion
-        tl.to(track, {
+        gsap.to(track, {
           x: () => -(track.scrollWidth - window.innerWidth + 100),
           ease: 'none',
-          duration: 1,
-        }, 0.15);
+          scrollTrigger: {
+            trigger: horizontalRef.current, start: 'top top',
+            end: () => `+=${track.scrollWidth - window.innerWidth + 400}`,
+            scrub: 1, pin: true, anticipatePin: 1, invalidateOnRefresh: true,
+          }
+        });
       }
 
-      // App showcase - staggered parallax entry
       if (appShowcaseRef.current) {
-        gsap.from('.app-phone', {
-          y: 100, opacity: 0, scale: 0.85, rotateY: 15, stagger: 0.15, duration: 1, ease: 'power3.out',
-          scrollTrigger: { trigger: appShowcaseRef.current, start: 'top 70%' }
-        });
+        gsap.fromTo('.app-phone', { y: 100, opacity: 0, scale: 0.85 },
+          { y: 0, opacity: 1, scale: 1, stagger: 0.15, duration: 0.9, ease: 'power3.out',
+            scrollTrigger: { trigger: appShowcaseRef.current, start: 'top 75%', once: true } });
       }
 
-      // Feature cards stagger
       gsap.utils.toArray<HTMLElement>('.feature-card').forEach((el, i) => {
-        gsap.from(el, {
-          y: 60, opacity: 0, scale: 0.92, duration: 0.8, ease: 'power3.out',
-          delay: i * 0.04,
-          scrollTrigger: { trigger: el, start: 'top 90%' }
-        });
+        gsap.fromTo(el, { y: 60, opacity: 0, scale: 0.95 },
+          { y: 0, opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out', delay: i * 0.04,
+            scrollTrigger: { trigger: el, start: 'top 92%', once: true } });
       });
 
-      // Text reveal with clipPath for headings
       gsap.utils.toArray<HTMLElement>('.text-reveal').forEach(el => {
-        gsap.from(el, {
-          y: 60, opacity: 0, clipPath: 'inset(0 0 100% 0)', duration: 1.2, ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 85%' }
-        });
+        gsap.fromTo(el, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 90%', once: true } });
       });
 
-      // Pricing cards entrance
       gsap.utils.toArray<HTMLElement>('.pricing-card').forEach((el, i) => {
-        gsap.from(el, {
-          y: 80, opacity: 0, scale: 0.9, rotateX: 10, duration: 0.9, ease: 'power3.out',
-          delay: i * 0.15,
-          scrollTrigger: { trigger: el, start: 'top 85%' }
-        });
+        gsap.fromTo(el, { y: 80, opacity: 0, scale: 0.92 },
+          { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'power3.out', delay: i * 0.12,
+            scrollTrigger: { trigger: el, start: 'top 90%', once: true } });
       });
 
-      // Testimonial cards slide in from alternating sides
       gsap.utils.toArray<HTMLElement>('.testimonial-card').forEach((el, i) => {
-        gsap.from(el, {
-          x: i % 2 === 0 ? -60 : 60, opacity: 0, duration: 0.8, ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 90%' }
-        });
+        gsap.fromTo(el, { x: i % 2 === 0 ? -50 : 50, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.7, ease: 'power3.out',
+            scrollTrigger: { trigger: el, start: 'top 92%', once: true } });
       });
+
+      ScrollTrigger.refresh();
     });
 
-    return () => ctx.revert();
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', onLoad);
+    const t1 = setTimeout(() => ScrollTrigger.refresh(), 500);
+    const t2 = setTimeout(() => ScrollTrigger.refresh(), 1500);
+
+    return () => {
+      window.removeEventListener('load', onLoad);
+      clearTimeout(t1); clearTimeout(t2);
+      ctx.revert();
+    };
   }, []);
 
   // Mouse follow glow
