@@ -272,17 +272,23 @@ const AdminDashboard = () => {
     setSavingApk(true);
     setApkUploadProgress(0);
     let apkUrl = apkSettings?.apk_url || '';
+    let fileSizeMb = apkSettings?.file_size_mb || 0;
     if (apkFile) {
-      const path = `apk/zenpos-${apkForm.version}.apk`;
-      // Simulate progress since supabase SDK doesn't expose upload progress
+      const safeVersion = (apkForm.version || '1.0.0').replace(/[^a-zA-Z0-9.\-_]/g, '');
+      const path = `releases/zenpos-v${safeVersion}-${Date.now()}.apk`;
+      fileSizeMb = Number((apkFile.size / 1024 / 1024).toFixed(2));
       const progressInterval = setInterval(() => {
         setApkUploadProgress(prev => Math.min(prev + Math.random() * 15, 90));
       }, 300);
-      const { error } = await supabase.storage.from('store-media').upload(path, apkFile, { cacheControl: '3600', upsert: true });
+      const { error } = await supabase.storage.from('app-files').upload(path, apkFile, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: 'application/vnd.android.package-archive',
+      });
       clearInterval(progressInterval);
       if (!error) {
         setApkUploadProgress(95);
-        apkUrl = supabase.storage.from('store-media').getPublicUrl(path).data.publicUrl;
+        apkUrl = supabase.storage.from('app-files').getPublicUrl(path).data.publicUrl;
       } else {
         toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
         setSavingApk(false);
@@ -290,7 +296,14 @@ const AdminDashboard = () => {
         return;
       }
     }
-    const payload = { apk_url: apkUrl, version: apkForm.version, push_notification_key: apkForm.push_notification_key, updated_at: new Date().toISOString() };
+    const payload: any = {
+      apk_url: apkUrl,
+      version: apkForm.version,
+      push_notification_key: apkForm.push_notification_key,
+      description: apkForm.description,
+      file_size_mb: fileSizeMb,
+      updated_at: new Date().toISOString(),
+    };
     let error;
     if (apkSettings?.id) {
       ({ error } = await supabase.from('admin_apk_settings').update(payload).eq('id', apkSettings.id));

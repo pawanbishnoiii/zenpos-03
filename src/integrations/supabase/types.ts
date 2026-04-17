@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           apk_url: string | null
           created_at: string
+          description: string | null
+          file_size_mb: number | null
           id: string
           push_notification_key: string | null
           updated_at: string
@@ -26,6 +28,8 @@ export type Database = {
         Insert: {
           apk_url?: string | null
           created_at?: string
+          description?: string | null
+          file_size_mb?: number | null
           id?: string
           push_notification_key?: string | null
           updated_at?: string
@@ -34,6 +38,8 @@ export type Database = {
         Update: {
           apk_url?: string | null
           created_at?: string
+          description?: string | null
+          file_size_mb?: number | null
           id?: string
           push_notification_key?: string | null
           updated_at?: string
