@@ -13,6 +13,7 @@ import {
   Layers, TrendingUp, Eye, Play, ChevronDown, Award, Wifi, Database, Rocket, Crown,
   Download, ChevronUp
 } from 'lucide-react';
+import GooeyOverlay from '@/components/landing/GooeyOverlay';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -111,11 +112,11 @@ const Index = () => {
   // GSAP Animations - Full Production
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Hero
-      gsap.from('.hero-title', { y: 120, opacity: 0, duration: 1.6, ease: 'expo.out', delay: 0.2 });
-      gsap.from('.hero-subtitle', { y: 60, opacity: 0, filter: 'blur(10px)', duration: 1.2, ease: 'power3.out', delay: 0.7 });
-      gsap.from('.hero-cta', { scale: 0.3, opacity: 0, duration: 1, ease: 'back.out(1.7)', delay: 1.1 });
-      gsap.from('.hero-stats > *', { y: 40, opacity: 0, scale: 0.8, stagger: 0.12, duration: 0.7, ease: 'power3.out', delay: 1.4 });
+      // Hero — use fromTo so end-state is guaranteed even if tweens are killed/reverted
+      gsap.fromTo('.hero-title', { y: 120, opacity: 0 }, { y: 0, opacity: 1, duration: 1.6, ease: 'expo.out', delay: 0.2, clearProps: 'transform,opacity,filter' });
+      gsap.fromTo('.hero-subtitle', { y: 60, opacity: 0, filter: 'blur(10px)' }, { y: 0, opacity: 1, filter: 'blur(0px)', duration: 1.2, ease: 'power3.out', delay: 0.7, clearProps: 'transform,opacity,filter' });
+      gsap.fromTo('.hero-cta', { scale: 0.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 1, ease: 'back.out(1.7)', delay: 1.1, clearProps: 'transform,opacity' });
+      gsap.fromTo('.hero-stats > *', { y: 40, opacity: 0, scale: 0.8 }, { y: 0, opacity: 1, scale: 1, stagger: 0.12, duration: 0.7, ease: 'power3.out', delay: 1.4, clearProps: 'transform,opacity' });
 
       // fromTo guarantees end-state visible even if trigger never fires
       gsap.utils.toArray<HTMLElement>('.gsap-reveal').forEach(el => {
@@ -136,16 +137,23 @@ const Index = () => {
           scrollTrigger: { trigger: dashboardRef.current, start: 'top bottom', end: 'bottom top', scrub: 1 } });
       }
 
-      // Horizontal scroll - desktop only
-      if (horizontalRef.current && horizontalTrackRef.current && window.innerWidth >= 768) {
+      // Horizontal scroll - desktop pinned, mobile scrub-without-pin (right-to-left as you scroll)
+      if (horizontalRef.current && horizontalTrackRef.current) {
         const track = horizontalTrackRef.current;
+        const isDesktop = window.innerWidth >= 768;
         gsap.to(track, {
-          x: () => -(track.scrollWidth - window.innerWidth + 100),
+          x: () => -(track.scrollWidth - window.innerWidth + (isDesktop ? 100 : 40)),
           ease: 'none',
           scrollTrigger: {
-            trigger: horizontalRef.current, start: 'top top',
-            end: () => `+=${track.scrollWidth - window.innerWidth + 400}`,
-            scrub: 1, pin: true, anticipatePin: 1, invalidateOnRefresh: true,
+            trigger: horizontalRef.current,
+            start: isDesktop ? 'top top' : 'top 80%',
+            end: () => isDesktop
+              ? `+=${track.scrollWidth - window.innerWidth + 400}`
+              : `+=${track.scrollWidth}`,
+            scrub: isDesktop ? 1 : 0.6,
+            pin: isDesktop,
+            anticipatePin: isDesktop ? 1 : 0,
+            invalidateOnRefresh: true,
           }
         });
       }
@@ -223,6 +231,8 @@ const Index = () => {
       <motion.div animate={{ y: [0, 25, 0], x: [0, -20, 0] }} transition={{ duration: 12, repeat: Infinity }} className="pointer-events-none fixed top-[40%] right-[10%] w-64 h-64 rounded-full opacity-[0.05]" style={{ background: 'radial-gradient(circle, hsl(25 95% 60%), transparent)' }} />
       <motion.div animate={{ y: [0, -20, 0], x: [0, 12, 0] }} transition={{ duration: 8, repeat: Infinity }} className="pointer-events-none fixed bottom-[20%] left-[20%] w-48 h-48 rounded-full opacity-[0.06]" style={{ background: 'radial-gradient(circle, hsl(var(--accent)), transparent)' }} />
 
+      {/* WebGL Gooey overlay tied to horizontal-section scroll */}
+      <GooeyOverlay triggerSelector=".gooey-trigger" color={[0.95, 0.42, 0.18]} scale={0.35} speed={0.25} />
       {/* Navbar */}
       <nav className="sticky top-0 z-50 backdrop-blur-2xl bg-background/60 border-b border-border/20">
         <div className="flex items-center justify-between px-4 md:px-8 py-3 max-w-7xl mx-auto">
@@ -436,7 +446,7 @@ const Index = () => {
       </div>
 
       {/* Horizontal Scroll - Built for Indian Businesses */}
-      <section ref={horizontalRef} className="relative h-screen flex items-center overflow-hidden bg-gradient-to-r from-background via-card to-background">
+      <section ref={horizontalRef} className="gooey-trigger relative md:h-screen flex items-center overflow-hidden bg-gradient-to-r from-background via-card to-background py-16 md:py-0">
         <div className="absolute inset-0 opacity-[0.03]" style={{
           backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
@@ -445,7 +455,7 @@ const Index = () => {
           <div className="absolute top-[20%] left-[10%] w-40 h-40 rounded-full opacity-[0.05] blur-3xl animate-pulse" style={{ background: 'hsl(var(--primary))' }} />
           <div className="absolute bottom-[20%] right-[15%] w-56 h-56 rounded-full opacity-[0.04] blur-3xl animate-pulse" style={{ background: 'hsl(25 95% 60%)', animationDelay: '2s' }} />
         </div>
-        <div ref={horizontalTrackRef} className="flex gap-8 px-[10vw] items-center">
+        <div ref={horizontalTrackRef} className="flex gap-4 md:gap-8 px-4 md:px-[10vw] items-center will-change-transform">
           <div className="horizontal-title min-w-[40vw] md:min-w-[35vw] shrink-0 pr-4">
             <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Why Choose Us</span>
             <h2 className="text-3xl md:text-6xl font-bold font-display text-foreground mt-3 leading-[1.1]">Built for<br /><span className="gradient-primary-text">Indian Businesses</span></h2>
