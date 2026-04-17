@@ -454,8 +454,24 @@ const StoreManager = () => {
             <div><label className={labelClass}>Address</label><textarea value={footerAddress} onChange={e => setFooterAddress(e.target.value)} rows={2} placeholder="Full address..." className={`${inputClass} resize-none`} /></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div><label className={labelClass}>Pincode</label><input type="text" value={footerPincode} onChange={e => setFooterPincode(e.target.value)} placeholder="110001" className={inputClass} /></div>
-              <div><label className={labelClass}>Google Maps URL</label><div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><input type="url" value={footerGoogleMap} onChange={e => setFooterGoogleMap(e.target.value)} placeholder="https://maps.google.com/..." className={`${inputClass} pl-9`} /></div></div>
+              <div>
+                <label className={labelClass}>Google Maps URL or Address</label>
+                <div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><input type="text" value={footerGoogleMap} onChange={e => setFooterGoogleMap(e.target.value)} placeholder="Paste maps link or full address" className={`${inputClass} pl-9`} /></div>
+                <p className="text-[10px] text-muted-foreground mt-1">💡 Open Google Maps → Share → Copy link, OR paste your shop address</p>
+              </div>
             </div>
+            {footerGoogleMap && (
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Map Preview</p>
+                <div className="rounded-xl overflow-hidden border border-border h-40 bg-muted">
+                  <iframe
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(footerGoogleMap)}&output=embed`}
+                    className="w-full h-full" loading="lazy" referrerPolicy="no-referrer-when-downgrade"
+                    title="Map preview"
+                  />
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Social Media</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
