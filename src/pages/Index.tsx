@@ -231,6 +231,8 @@ const Index = () => {
       <motion.div animate={{ y: [0, 25, 0], x: [0, -20, 0] }} transition={{ duration: 12, repeat: Infinity }} className="pointer-events-none fixed top-[40%] right-[10%] w-64 h-64 rounded-full opacity-[0.05]" style={{ background: 'radial-gradient(circle, hsl(25 95% 60%), transparent)' }} />
       <motion.div animate={{ y: [0, -20, 0], x: [0, 12, 0] }} transition={{ duration: 8, repeat: Infinity }} className="pointer-events-none fixed bottom-[20%] left-[20%] w-48 h-48 rounded-full opacity-[0.06]" style={{ background: 'radial-gradient(circle, hsl(var(--accent)), transparent)' }} />
 
+      {/* WebGL Gooey overlay tied to horizontal-section scroll */}
+      <GooeyOverlay triggerSelector=".gooey-trigger" color={[0.95, 0.42, 0.18]} scale={0.35} speed={0.25} />
       {/* Navbar */}
       <nav className="sticky top-0 z-50 backdrop-blur-2xl bg-background/60 border-b border-border/20">
         <div className="flex items-center justify-between px-4 md:px-8 py-3 max-w-7xl mx-auto">
