@@ -13,6 +13,7 @@ import {
   Layers, TrendingUp, Eye, Play, ChevronDown, Award, Wifi, Database, Rocket, Crown,
   Download, ChevronUp
 } from 'lucide-react';
+import GooeyOverlay from '@/components/landing/GooeyOverlay';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -443,7 +444,7 @@ const Index = () => {
       </div>
 
       {/* Horizontal Scroll - Built for Indian Businesses */}
-      <section ref={horizontalRef} className="relative h-screen flex items-center overflow-hidden bg-gradient-to-r from-background via-card to-background">
+      <section ref={horizontalRef} className="gooey-trigger relative md:h-screen flex items-center overflow-hidden bg-gradient-to-r from-background via-card to-background py-16 md:py-0">
         <div className="absolute inset-0 opacity-[0.03]" style={{
           backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
@@ -452,7 +453,7 @@ const Index = () => {
           <div className="absolute top-[20%] left-[10%] w-40 h-40 rounded-full opacity-[0.05] blur-3xl animate-pulse" style={{ background: 'hsl(var(--primary))' }} />
           <div className="absolute bottom-[20%] right-[15%] w-56 h-56 rounded-full opacity-[0.04] blur-3xl animate-pulse" style={{ background: 'hsl(25 95% 60%)', animationDelay: '2s' }} />
         </div>
-        <div ref={horizontalTrackRef} className="flex gap-8 px-[10vw] items-center">
+        <div ref={horizontalTrackRef} className="flex gap-4 md:gap-8 px-4 md:px-[10vw] items-center will-change-transform">
           <div className="horizontal-title min-w-[40vw] md:min-w-[35vw] shrink-0 pr-4">
             <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Why Choose Us</span>
             <h2 className="text-3xl md:text-6xl font-bold font-display text-foreground mt-3 leading-[1.1]">Built for<br /><span className="gradient-primary-text">Indian Businesses</span></h2>
