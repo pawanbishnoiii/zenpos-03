@@ -109,11 +109,11 @@ const Index = () => {
     const ctx = gsap.context(() => {
       const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
       heroTl
-        .from('.hero-badge', { y: 30, opacity: 0, duration: 0.45 })
-        .from('.hero-word', { yPercent: 120, opacity: 0, duration: 0.8, stagger: 0.07 }, '-=0.1')
-        .from('.hero-subtitle', { y: 24, opacity: 0, duration: 0.55 }, '-=0.4')
-        .from('.hero-cta', { scale: 0.92, opacity: 0, duration: 0.4 }, '-=0.3')
-        .from('.hero-stat', { y: 16, opacity: 0, stagger: 0.08, duration: 0.35 }, '-=0.2');
+        .fromTo('.hero-badge', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45 })
+        .fromTo('.hero-word', { yPercent: 120, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.8, stagger: 0.07 }, '-=0.1')
+        .fromTo('.hero-subtitle', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55 }, '-=0.4')
+        .fromTo('.hero-cta', { scale: 0.92, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4 }, '-=0.3')
+        .fromTo('.hero-stat', { y: 16, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.08, duration: 0.35 }, '-=0.2');
 
       if (landingProgressRef.current) {
         gsap.to(landingProgressRef.current, {
@@ -130,9 +130,20 @@ const Index = () => {
       }
 
       gsap.utils.toArray<HTMLElement>('.gsap-reveal').forEach(el => {
-        gsap.from(el, {
-          y: 60, opacity: 0, duration: 0.8, ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+        gsap.fromTo(el, {
+          y: 60, opacity: 0,
+        }, {
+          y: 0, opacity: 1, duration: 0.8, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none', once: true }
+        });
+      });
+
+      gsap.utils.toArray<HTMLElement>('.gsap-blur-in').forEach(el => {
+        gsap.fromTo(el, {
+          filter: 'blur(18px)', opacity: 0, y: 40,
+        }, {
+          filter: 'blur(0px)', opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 90%', once: true }
         });
       });
 
@@ -205,7 +216,15 @@ const Index = () => {
       });
     } catch {}
 
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', onLoad);
+    const t1 = setTimeout(() => ScrollTrigger.refresh(), 500);
+    const t2 = setTimeout(() => ScrollTrigger.refresh(), 1500);
+
     return () => {
+      window.removeEventListener('load', onLoad);
+      clearTimeout(t1);
+      clearTimeout(t2);
       removeCtaListeners?.();
       mm.revert();
       ctx.revert();
@@ -221,9 +240,24 @@ const Index = () => {
     if (val) navigate(`/store/${val}`);
   };
 
+  useEffect(() => {
+    const cursor = document.getElementById('cursor-glow');
+    if (!cursor) return;
+    const onMove = (e: MouseEvent) => {
+      gsap.to(cursor, { x: e.clientX - 120, y: e.clientY - 120, duration: 0.5, ease: 'power3.out' });
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background overflow-hidden relative">
       <div ref={landingProgressRef} className="fixed top-0 left-0 h-1 w-full z-[60] bg-primary/80 scale-x-0" />
+      <div
+        id="cursor-glow"
+        className="pointer-events-none fixed w-[240px] h-[240px] rounded-full opacity-[0.08] blur-3xl z-[1]"
+        style={{ background: 'radial-gradient(circle, hsl(var(--primary)), transparent)' }}
+      />
       {/* Grid Background */}
       <div className="pointer-events-none fixed inset-0 opacity-15" style={{
         backgroundImage: 'linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px)',
@@ -316,7 +350,7 @@ const Index = () => {
         </section>
 
         {/* Dashboard Preview */}
-        <section ref={dashboardRef} className="gsap-reveal py-16 md:py-20">
+        <section ref={dashboardRef} className="gsap-reveal gsap-blur-in py-16 md:py-20">
           <div className="text-center space-y-3 mb-10">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">Live Preview</span>
             <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Beautiful Dashboard</h2>
@@ -353,7 +387,7 @@ const Index = () => {
         </section>
 
         {/* Store Categories */}
-        <section id="categories" className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="categories" className="gsap-reveal gsap-blur-in py-16 md:py-20 space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">15+ Categories</span>
             <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Works for Every Store</h2>
@@ -378,7 +412,7 @@ const Index = () => {
         </section>
 
         {/* Features Grid */}
-        <section id="features" className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="features" className="gsap-reveal gsap-blur-in py-16 md:py-20 space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">Powerful Tools</span>
             <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Everything You Need</h2>
