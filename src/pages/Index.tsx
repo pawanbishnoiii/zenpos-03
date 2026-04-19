@@ -1,4 +1,4 @@
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useRef, useEffect, useState } from 'react';
@@ -7,11 +7,11 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { animate as animeAnimate } from 'animejs';
 import {
-  Car, Wrench, Zap, BarChart3, ScanLine, Printer, ChevronRight, Star, Shield,
+  Car, Wrench, Zap, BarChart3, ScanLine, Printer, Star, Shield,
   ShoppingCart, Pill, Laptop, Shirt, Apple, Coffee, Scissors, BookOpen,
   Hammer, Heart, Search, Users, Receipt, Globe, ArrowRight, Check, Sparkles,
-  Store, Phone, Mail, MapPin, MessageSquare, Smartphone, Clock, Lock,
-  Layers, TrendingUp, Eye, Play, ChevronDown, Award, Wifi, Database, Rocket, Crown
+  Store, Phone, Mail, MapPin, MessageSquare, Smartphone, Lock,
+  Layers, Eye, Play, ChevronDown, Award, Database, Rocket, Crown
 } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -85,10 +85,15 @@ const Index = () => {
   const horizontalRef = useRef<HTMLDivElement>(null);
   const horizontalTrackRef = useRef<HTMLDivElement>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
   const ctaButtonRef = useRef<HTMLButtonElement>(null);
+  const landingProgressRef = useRef<HTMLDivElement>(null);
+  const finderInputRef = useRef<HTMLInputElement>(null);
 
-  if (!loading && user) { navigate('/', { replace: true }); }
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/', { replace: true });
+    }
+  }, [loading, navigate, user]);
 
   // Fetch dynamic pricing plans
   useEffect(() => {
@@ -99,15 +104,46 @@ const Index = () => {
 
   // GSAP Animations
   useEffect(() => {
+    let removeCtaListeners: (() => void) | null = null;
+    const mm = gsap.matchMedia();
     const ctx = gsap.context(() => {
-      gsap.from('.hero-title', { y: 80, opacity: 0, duration: 1.2, ease: 'elastic.out(1, 0.5)', delay: 0.2 });
-      gsap.from('.hero-subtitle', { y: 40, opacity: 0, duration: 0.8, ease: 'power3.out', delay: 0.5 });
-      gsap.from('.hero-cta', { scale: 0.5, opacity: 0, duration: 0.6, ease: 'back.out(1.7)', delay: 0.8 });
+      const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      heroTl
+        .fromTo('.hero-badge', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45 })
+        .fromTo('.hero-word', { yPercent: 120, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.8, stagger: 0.07 }, '-=0.1')
+        .fromTo('.hero-subtitle', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55 }, '-=0.4')
+        .fromTo('.hero-cta', { scale: 0.92, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4 }, '-=0.3')
+        .fromTo('.hero-stat', { y: 16, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.08, duration: 0.35 }, '-=0.2');
+
+      if (landingProgressRef.current) {
+        gsap.to(landingProgressRef.current, {
+          scaleX: 1,
+          transformOrigin: 'left center',
+          ease: 'none',
+          scrollTrigger: {
+            trigger: document.documentElement,
+            start: 'top top',
+            end: 'bottom bottom',
+            scrub: true,
+          },
+        });
+      }
 
       gsap.utils.toArray<HTMLElement>('.gsap-reveal').forEach(el => {
-        gsap.from(el, {
-          y: 60, opacity: 0, duration: 0.8, ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+        gsap.fromTo(el, {
+          y: 60, opacity: 0,
+        }, {
+          y: 0, opacity: 1, duration: 0.8, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none', once: true }
+        });
+      });
+
+      gsap.utils.toArray<HTMLElement>('.gsap-blur-in').forEach(el => {
+        gsap.fromTo(el, {
+          filter: 'blur(18px)', opacity: 0, y: 40,
+        }, {
+          filter: 'blur(0px)', opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 90%', once: true }
         });
       });
 
@@ -122,42 +158,98 @@ const Index = () => {
         });
       }
 
-      // Horizontal scroll
-      if (horizontalRef.current && horizontalTrackRef.current) {
-        const track = horizontalTrackRef.current;
-        gsap.to(track, {
-          x: () => -(track.scrollWidth - window.innerWidth + 80),
-          ease: 'none',
-          scrollTrigger: {
-            trigger: horizontalRef.current, start: 'top top',
-            end: () => `+=${track.scrollWidth - window.innerWidth + 200}`,
-            scrub: 1, pin: true, anticipatePin: 1,
-          }
-        });
-      }
-
-      // Counter animations
-      gsap.utils.toArray<HTMLElement>('.gsap-counter').forEach(el => {
-        const target = parseInt(el.dataset.target || '0');
-        gsap.from(el, {
-          textContent: 0, duration: 2, ease: 'power1.out', snap: { textContent: 1 },
-          scrollTrigger: { trigger: el, start: 'top 90%' },
-          onUpdate: function () { el.textContent = Math.round(parseFloat(el.textContent || '0')).toString(); }
-        });
+      mm.add('(min-width: 1024px)', () => {
+        if (horizontalRef.current && horizontalTrackRef.current) {
+          const track = horizontalTrackRef.current;
+          gsap.to(track, {
+            x: () => -(track.scrollWidth - window.innerWidth + 80),
+            ease: 'none',
+            scrollTrigger: {
+              trigger: horizontalRef.current,
+              start: 'top top',
+              end: () => `+=${Math.max(track.scrollWidth - window.innerWidth + 200, 700)}`,
+              scrub: 1,
+              pin: true,
+              anticipatePin: 1,
+            },
+          });
+        }
       });
+
+      if (ctaButtonRef.current) {
+        const ctaElement = ctaButtonRef.current;
+        const ctaX = gsap.quickTo(ctaButtonRef.current, 'x', { duration: 0.25, ease: 'power3' });
+        const ctaY = gsap.quickTo(ctaButtonRef.current, 'y', { duration: 0.25, ease: 'power3' });
+        const reset = () => {
+          ctaX(0);
+          ctaY(0);
+        };
+        const onMouseMove = (e: MouseEvent) => {
+          const rect = ctaElement.getBoundingClientRect();
+          if (!rect) return;
+          const strength = 0.18;
+          ctaX((e.clientX - (rect.left + rect.width / 2)) * strength);
+          ctaY((e.clientY - (rect.top + rect.height / 2)) * strength);
+        };
+        ctaElement.addEventListener('mousemove', onMouseMove);
+        ctaElement.addEventListener('mouseleave', reset);
+
+        removeCtaListeners = () => {
+          ctaElement.removeEventListener('mousemove', onMouseMove);
+          ctaElement.removeEventListener('mouseleave', reset);
+        };
+      }
     });
 
-    try {
+    if (document.querySelector('.anime-float')) {
       animeAnimate('.anime-float', {
         translateY: [-5, 5], duration: 3000, direction: 'alternate', ease: 'inOutSine', loop: true,
       });
-    } catch {}
+    }
 
-    return () => ctx.revert();
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', onLoad);
+    const t1 = setTimeout(() => ScrollTrigger.refresh(), 500);
+    const t2 = setTimeout(() => ScrollTrigger.refresh(), 1500);
+
+    return () => {
+      window.removeEventListener('load', onLoad);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      removeCtaListeners?.();
+      mm.revert();
+      ctx.revert();
+    };
+  }, []);
+
+  useEffect(() => {
+    ScrollTrigger.refresh();
+  }, [plans.length]);
+
+  const goToStore = () => {
+    const val = finderInputRef.current?.value.trim();
+    if (val) navigate(`/store/${val}`);
+  };
+
+  useEffect(() => {
+    const cursor = document.getElementById('cursor-glow');
+    if (!cursor) return;
+    const onMove = (e: MouseEvent) => {
+      gsap.to(cursor, { x: e.clientX - 120, y: e.clientY - 120, duration: 0.5, ease: 'power3.out' });
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
   }, []);
 
   return (
     <div className="min-h-screen bg-background overflow-hidden relative">
+      <div ref={landingProgressRef} className="fixed top-0 left-0 h-1 w-full z-[60] bg-primary/80 scale-x-0" />
+      <div
+        id="cursor-glow"
+        className="pointer-events-none fixed hidden md:block w-[240px] h-[240px] rounded-full opacity-[0.08] blur-3xl z-[1]"
+        aria-hidden="true"
+        style={{ background: 'radial-gradient(circle, hsl(var(--primary)), transparent)' }}
+      />
       {/* Grid Background */}
       <div className="pointer-events-none fixed inset-0 opacity-15" style={{
         backgroundImage: 'linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px)',
@@ -200,12 +292,14 @@ const Index = () => {
         <section ref={heroRef} className="pt-16 pb-20 md:pt-24 md:pb-32 text-center space-y-8">
           <div>
             <motion.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-6 border border-primary/20">
+              className="hero-badge inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-6 border border-primary/20">
               <Sparkles className="w-3.5 h-3.5" /> B2B SaaS for Store Owners — Start Free
             </motion.span>
             <h1 className="hero-title text-4xl md:text-6xl lg:text-7xl font-bold font-display text-foreground leading-tight">
-              The Smartest <span className="gradient-primary-text">POS System</span> <br className="hidden md:block" />
-              for Every Indian Business
+              <span className="inline-block overflow-hidden align-bottom"><span className="hero-word inline-block">The Smartest</span></span>{' '}
+              <span className="inline-block overflow-hidden align-bottom"><span className="hero-word inline-block gradient-primary-text">POS System</span></span>{' '}
+              <br className="hidden md:block" />
+              <span className="inline-block overflow-hidden align-bottom"><span className="hero-word inline-block">for Every Indian Business</span></span>
             </h1>
             <p className="hero-subtitle text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-5 leading-relaxed">
               Billing, inventory, customer management, online store, email alerts and analytics — all in one beautiful app.
@@ -231,7 +325,7 @@ const Index = () => {
               const Icon = s.icon;
               return (
                 <motion.div key={s.label} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 + i * 0.1 }}
-                  className="text-center anime-float">
+                  className="hero-stat text-center anime-float">
                   <div className="w-12 h-12 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-2">
                     <Icon className="w-5 h-5 text-primary" />
                   </div>
@@ -248,7 +342,7 @@ const Index = () => {
         </section>
 
         {/* Dashboard Preview */}
-        <section ref={dashboardRef} className="gsap-reveal py-16 md:py-20">
+        <section ref={dashboardRef} className="gsap-reveal gsap-blur-in py-16 md:py-20">
           <div className="text-center space-y-3 mb-10">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">Live Preview</span>
             <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Beautiful Dashboard</h2>
@@ -285,7 +379,7 @@ const Index = () => {
         </section>
 
         {/* Store Categories */}
-        <section id="categories" className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="categories" className="gsap-reveal gsap-blur-in py-16 md:py-20 space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">15+ Categories</span>
             <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Works for Every Store</h2>
@@ -310,7 +404,7 @@ const Index = () => {
         </section>
 
         {/* Features Grid */}
-        <section id="features" className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="features" className="gsap-reveal gsap-blur-in py-16 md:py-20 space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">Powerful Tools</span>
             <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Everything You Need</h2>
@@ -360,12 +454,12 @@ const Index = () => {
       </div>
 
       {/* Horizontal Scroll with Creative Cards */}
-      <section ref={horizontalRef} className="relative h-screen flex items-center overflow-hidden bg-gradient-to-r from-background via-card to-background">
+      <section ref={horizontalRef} className="relative min-h-[85vh] lg:h-screen flex items-center overflow-x-auto lg:overflow-hidden bg-gradient-to-r from-background via-card to-background">
         <div className="absolute inset-0 opacity-5" style={{
           backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--primary)) 1px, transparent 1px)',
           backgroundSize: '32px 32px',
         }} />
-        <div ref={horizontalTrackRef} className="flex gap-8 px-[10vw] items-center">
+        <div ref={horizontalTrackRef} className="flex gap-8 px-[10vw] py-8 lg:py-0 items-center">
           <div className="min-w-[40vw] md:min-w-[30vw] shrink-0 pr-4">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">Why Choose Us</span>
             <h2 className="text-3xl md:text-5xl font-bold font-display text-foreground mt-2">Built for<br /><span className="gradient-primary-text">Indian Businesses</span></h2>
@@ -403,7 +497,7 @@ const Index = () => {
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8">
         {/* Testimonials */}
-        <section className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="testimonials" className="gsap-reveal py-16 md:py-20 space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">Happy Owners</span>
             <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Loved by Business Owners</h2>
@@ -509,20 +603,29 @@ const Index = () => {
           <div className="max-w-md mx-auto">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <input type="text" placeholder="Enter store name or slug..."
+              <input
+                ref={finderInputRef}
+                type="text"
+                placeholder="Enter store name or slug..."
                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-soft"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    const val = (e.target as HTMLInputElement).value.trim();
-                    if (val) navigate(`/store/${val}`);
+                    goToStore();
                   }
                 }} />
+              <button
+                type="button"
+                onClick={goToStore}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground"
+              >
+                Open
+              </button>
             </div>
           </div>
         </section>
 
         {/* FAQ */}
-        <section className="gsap-reveal py-16 md:py-20 space-y-8">
+        <section id="faq" className="gsap-reveal py-16 md:py-20 space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">FAQ</span>
             <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Frequently Asked Questions</h2>
@@ -596,11 +699,21 @@ const Index = () => {
             </div>
             <div className="space-y-2">
               <p className="text-xs font-bold text-foreground uppercase tracking-wider">Product</p>
-              <div className="space-y-1.5">{['Features', 'Categories', 'Pricing', 'Online Store'].map(l => <a key={l} href={`#${l.toLowerCase().replace(' ', '-')}`} className="block text-xs text-muted-foreground hover:text-foreground transition-colors">{l}</a>)}</div>
+              <div className="space-y-1.5">{[
+                { label: 'Features', href: '#features' },
+                { label: 'Categories', href: '#categories' },
+                { label: 'Pricing', href: '#pricing' },
+                { label: 'Testimonials', href: '#testimonials' },
+              ].map((l) => <a key={l.label} href={l.href} className="block text-xs text-muted-foreground hover:text-foreground transition-colors">{l.label}</a>)}</div>
             </div>
             <div className="space-y-2">
               <p className="text-xs font-bold text-foreground uppercase tracking-wider">Support</p>
-              <div className="space-y-1.5">{['Contact Us', 'FAQ', 'Help Center', 'Privacy Policy'].map(l => <a key={l} href="#contact" className="block text-xs text-muted-foreground hover:text-foreground transition-colors">{l}</a>)}</div>
+              <div className="space-y-1.5">{[
+                { label: 'Contact Us', href: '#contact' },
+                { label: 'FAQ', href: '#faq' },
+                { label: 'Help Center', href: '#features' },
+                { label: 'Privacy Policy', href: '#contact' },
+              ].map((l) => <a key={l.label} href={l.href} className="block text-xs text-muted-foreground hover:text-foreground transition-colors">{l.label}</a>)}</div>
             </div>
             <div className="space-y-2">
               <p className="text-xs font-bold text-foreground uppercase tracking-wider">Connect</p>
