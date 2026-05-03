@@ -7,6 +7,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BUSINESS_CATEGORIES } from '@/lib/categories';
 import { CATEGORY_CONFIGS, getCategoryConfig } from '@/lib/categoryConfig';
+import OneSignalPanel from '@/components/admin/OneSignalPanel';
+import RazorpayPanel from '@/components/admin/RazorpayPanel';
 
 const generateSKU = () => `GAL-${Date.now().toString(36).toUpperCase()}`;
 
@@ -1012,6 +1014,8 @@ const AdminDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {activeTab === 'onesignal' && <OneSignalPanel />}
+      {activeTab === 'razorpay' && <RazorpayPanel />}
     </div>
   );
 };
