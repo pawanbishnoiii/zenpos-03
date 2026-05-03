@@ -32,6 +32,33 @@
 </head>
   <body>
     <div id="root"></div>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "5823040d-3c28-4360-baa3-2902b1691a0a",
+          serviceWorkerPath: "/OneSignalSDKWorker.js",
+          notifyButton: { enable: false },
+          allowLocalhostAsSecureOrigin: true,
+        });
+        OneSignal.User.PushSubscription.addEventListener('change', async (e) => {
+          const id = e.current.id;
+          if (id && e.current.optedIn) {
+            try {
+              const { supabase } = await import('/src/integrations/supabase/client.ts');
+              await supabase.from('push_subscribers').upsert({
+                player_id: id,
+                user_agent: navigator.userAgent,
+                is_active: true,
+                last_seen_at: new Date().toISOString()
+              }, { onConflict: 'player_id' });
+              localStorage.setItem('os_player_id', id);
+            } catch (_) {}
+          }
+        });
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
