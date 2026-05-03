@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Package, Store, Users, Mail, Bell, Settings, Activity, Shield, ChevronLeft, ChevronRight, CreditCard, Menu, X, LogOut, Smartphone, Palette } from 'lucide-react';
+import { BarChart3, Package, Store, Users, Mail, Bell, Settings, Activity, Shield, ChevronLeft, ChevronRight, CreditCard, Menu, X, LogOut, Smartphone, Palette, Send, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const NAV_ITEMS = [
@@ -12,6 +12,8 @@ const NAV_ITEMS = [
   { path: '/admin/themes', icon: Palette, label: 'Themes' },
   { path: '/admin/smtp', icon: Mail, label: 'Auth & SMTP' },
   { path: '/admin/alerts', icon: Bell, label: 'Alerts' },
+  { path: '/admin/onesignal', icon: Send, label: 'OneSignal' },
+  { path: '/admin/razorpay', icon: Wallet, label: 'Razorpay' },
   { path: '/admin/features', icon: Settings, label: 'Features' },
   { path: '/admin/analytics', icon: Activity, label: 'Analytics' },
   { path: '/admin/subscriptions', icon: CreditCard, label: 'Plans' },
