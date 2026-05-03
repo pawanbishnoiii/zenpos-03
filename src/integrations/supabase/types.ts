@@ -604,6 +604,48 @@ export type Database = {
         }
         Relationships: []
       }
+      onesignal_settings: {
+        Row: {
+          app_id: string
+          default_icon_url: string
+          default_url: string
+          enabled: boolean
+          id: string
+          rest_api_key: string
+          safari_web_id: string
+          updated_at: string
+          webhook_clicked_url: string
+          webhook_dismissed_url: string
+          webhook_displayed_url: string
+        }
+        Insert: {
+          app_id?: string
+          default_icon_url?: string
+          default_url?: string
+          enabled?: boolean
+          id?: string
+          rest_api_key?: string
+          safari_web_id?: string
+          updated_at?: string
+          webhook_clicked_url?: string
+          webhook_dismissed_url?: string
+          webhook_displayed_url?: string
+        }
+        Update: {
+          app_id?: string
+          default_icon_url?: string
+          default_url?: string
+          enabled?: boolean
+          id?: string
+          rest_api_key?: string
+          safari_web_id?: string
+          updated_at?: string
+          webhook_clicked_url?: string
+          webhook_dismissed_url?: string
+          webhook_displayed_url?: string
+        }
+        Relationships: []
+      }
       printer_settings: {
         Row: {
           business_id: string
@@ -838,6 +880,150 @@ export type Database = {
           name?: string
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      push_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          notification_id: string | null
+          payload: Json | null
+          player_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          notification_id?: string | null
+          payload?: Json | null
+          player_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          notification_id?: string | null
+          payload?: Json | null
+          player_id?: string | null
+        }
+        Relationships: []
+      }
+      push_notifications: {
+        Row: {
+          created_at: string
+          error: string | null
+          external_user_ids: Json | null
+          id: string
+          image_url: string | null
+          launch_url: string | null
+          message: string
+          onesignal_id: string | null
+          player_ids: Json | null
+          recipients: number | null
+          segment: string | null
+          sent_by: string | null
+          status: string
+          target: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          external_user_ids?: Json | null
+          id?: string
+          image_url?: string | null
+          launch_url?: string | null
+          message: string
+          onesignal_id?: string | null
+          player_ids?: Json | null
+          recipients?: number | null
+          segment?: string | null
+          sent_by?: string | null
+          status?: string
+          target?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          external_user_ids?: Json | null
+          id?: string
+          image_url?: string | null
+          launch_url?: string | null
+          message?: string
+          onesignal_id?: string | null
+          player_ids?: Json | null
+          recipients?: number | null
+          segment?: string | null
+          sent_by?: string | null
+          status?: string
+          target?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      push_subscribers: {
+        Row: {
+          email: string | null
+          id: string
+          is_active: boolean
+          last_seen_at: string
+          player_id: string
+          subscribed_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string
+          player_id: string
+          subscribed_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string
+          player_id?: string
+          subscribed_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      razorpay_settings: {
+        Row: {
+          enabled: boolean
+          id: string
+          key_id: string
+          key_secret: string
+          mode: string
+          updated_at: string
+          webhook_secret: string
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          key_id?: string
+          key_secret?: string
+          mode?: string
+          updated_at?: string
+          webhook_secret?: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          key_id?: string
+          key_secret?: string
+          mode?: string
+          updated_at?: string
+          webhook_secret?: string
         }
         Relationships: []
       }

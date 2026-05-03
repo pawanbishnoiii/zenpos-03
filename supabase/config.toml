@@ -1,1 +1,7 @@
 project_id = "eheaxxvaxwdbdyekemnp"
+
+[functions.send-push]
+verify_jwt = true
+
+[functions.onesignal-webhook]
+verify_jwt = false
