@@ -23,7 +23,7 @@ const STORE_THEMES_INFO: Record<string, { label: string; emoji: string; desc: st
   bookshop: { label: 'Bookshop', emoji: '📚', desc: 'Warm bookshop' },
 };
 
-type AdminTab = 'overview' | 'gallery' | 'users' | 'businesses' | 'features' | 'smtp' | 'notifications' | 'analytics' | 'subscriptions' | 'themes' | 'backup' | 'apps';
+type AdminTab = 'overview' | 'gallery' | 'users' | 'businesses' | 'features' | 'smtp' | 'notifications' | 'analytics' | 'subscriptions' | 'themes' | 'backup' | 'apps' | 'onesignal' | 'razorpay';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
@@ -77,6 +77,8 @@ const AdminDashboard = () => {
     if (path.includes('/admin/themes')) return 'themes';
     if (path.includes('/admin/backup')) return 'backup';
     if (path.includes('/admin/apps')) return 'apps';
+    if (path.includes('/admin/onesignal')) return 'onesignal';
+    if (path.includes('/admin/razorpay')) return 'razorpay';
     return 'overview';
   };
 
@@ -88,6 +90,7 @@ const AdminDashboard = () => {
       users: '/admin/users', smtp: '/admin/smtp', notifications: '/admin/alerts',
       features: '/admin/features', analytics: '/admin/analytics', subscriptions: '/admin/subscriptions',
       themes: '/admin/themes', backup: '/admin/backup', apps: '/admin/apps',
+      onesignal: '/admin/onesignal', razorpay: '/admin/razorpay',
     };
     navigate(pathMap[tabId] || '/admin');
   };
