@@ -42,21 +42,6 @@
           notifyButton: { enable: false },
           allowLocalhostAsSecureOrigin: true,
         });
-        OneSignal.User.PushSubscription.addEventListener('change', async (e) => {
-          const id = e.current.id;
-          if (id && e.current.optedIn) {
-            try {
-              const { supabase } = await import('/src/integrations/supabase/client.ts');
-              await supabase.from('push_subscribers').upsert({
-                player_id: id,
-                user_agent: navigator.userAgent,
-                is_active: true,
-                last_seen_at: new Date().toISOString()
-              }, { onConflict: 'player_id' });
-              localStorage.setItem('os_player_id', id);
-            } catch (_) {}
-          }
-        });
       });
     </script>
     <script type="module" src="/src/main.tsx"></script>
