@@ -27,6 +27,7 @@ import ExpenseTracker from "@/pages/ExpenseTracker";
 import CreditLedger from "@/pages/CreditLedger";
 import NotFound from "./pages/NotFound";
 import AppDownload from "./pages/AppDownload";
+import SubscribeButton from "@/components/notifications/SubscribeButton";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
         <LanguageProvider>
           <Toaster />
           <Sonner />
+          <SubscribeButton />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<HomeRouter />} />
